@@ -243,7 +243,7 @@ export default function MenuPage() {
     }
     
     const getSubRecipeName = (id: string) => subRecipes.find(sr => sr.id === id)?.name || 'N/A';
-    const getDishForSubRecipe = (subRecipeId: string) => dishes.find(d => d.subRecipeIds.includes(subRecipeId));
+    const getDishesForSubRecipe = (subRecipeId: string) => dishes.filter(d => d.subRecipeIds.includes(subRecipeId));
 
 
   return (
@@ -332,13 +332,13 @@ export default function MenuPage() {
                   <TableHead className="w-[30%]">Nombre de Sub-Receta</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>Tiempo (min)</TableHead>
-                  <TableHead>Asignada a Platillo</TableHead>
+                  <TableHead>Asignada a Platillo(s)</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subRecipes.map((sr) => {
-                    const assignedDish = getDishForSubRecipe(sr.id);
+                    const assignedDishes = getDishesForSubRecipe(sr.id);
                     return (
                         <TableRow key={sr.id}>
                             <TableCell className="font-medium">{sr.name}</TableCell>
@@ -349,7 +349,7 @@ export default function MenuPage() {
                                     {sr.prepTime}
                                 </div>
                             </TableCell>
-                            <TableCell>{assignedDish?.name || 'No asignada'}</TableCell>
+                            <TableCell>{assignedDishes.map(d => d.name).join(', ') || 'No asignada'}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
