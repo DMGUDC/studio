@@ -1,5 +1,6 @@
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -17,7 +18,7 @@ export type Cook = {
   
   export type OrderItem = {
     id: string;
-    name: string;
+    name:string;
     quantity: number;
     price: number;
     notes?: string;
@@ -85,4 +86,14 @@ export type Cook = {
     amount: number;
     type: 'revenue' | 'expense';
     description: string;
+  }
+
+  export type UserRole = "Gerente" | "Mesero" | "Cocinero";
+
+  export type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    status: "Activo" | "Inactivo";
   }

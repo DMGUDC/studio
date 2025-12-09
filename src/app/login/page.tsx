@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -15,10 +16,12 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { XChefLogo } from "@/components/icons";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [email, setEmail] = useState("gerente@xchef.local");
   const [password, setPassword] = useState("xchef123");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,11 +32,8 @@ export default function LoginPage() {
 
     // Simulate API call
     setTimeout(() => {
-      if (
-        (email === "gerente@xchef.local" && password === "xchef123") ||
-        (email === "mesero@xchef.local" && password === "xchef123") ||
-        (email === "cocinero@xchef.local" && password === "xchef123")
-      ) {
+      // Password is not validated for this demo
+      if (login(email)) {
         toast({
           title: "Inicio de Sesión Exitoso",
           description: "Bienvenido a XChef.",
@@ -43,7 +43,7 @@ export default function LoginPage() {
         toast({
           variant: "destructive",
           title: "Error de Autenticación",
-          description: "Correo o contraseña incorrectos.",
+          description: "Correo incorrecto o usuario inactivo.",
         });
         setIsLoading(false);
       }

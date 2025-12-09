@@ -1,11 +1,9 @@
-import type {Metadata} from 'next';
+
+"use client";
+
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-
-export const metadata: Metadata = {
-  title: 'XChef Frontend',
-  description: 'Sistema Integral de Gestión de Restaurantes',
-};
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout({
   children,
@@ -15,12 +13,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>XChef Frontend</title>
+        <meta name="description" content="Sistema Integral de Gestión de Restaurantes" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <AuthProvider>
+            {children}
+        </AuthProvider>
         <Toaster />
       </body>
     </html>

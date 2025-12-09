@@ -1,11 +1,23 @@
 
 
-import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord } from './types';
+
+import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord, User } from './types';
+
+export const initialUsers: User[] = [
+    { id: 'usr01', name: "Gerente Demo", email: "gerente@xchef.local", role: "Gerente", status: "Activo" },
+    { id: 'usr02', name: "Carlos", email: "mesero@xchef.local", role: "Mesero", status: "Activo" },
+    { id: 'usr03', name: "Ana", email: "ana@xchef.local", role: "Mesero", status: "Activo" },
+    { id: 'usr04', name: "Sofia", email: "sofia@xchef.local", role: "Mesero", status: "Inactivo" },
+    { id: 'usr05', name: "Juan", email: "cocinero@xchef.local", role: "Cocinero", status: "Activo" },
+    { id: 'usr06', name: "Maria", email: "maria@xchef.local", role: "Cocinero", status: "Activo" },
+    { id: 'usr07', name: "Pedro", email: "pedro@xchef.local", role: "Cocinero", status: "Activo" },
+  ];
+  
 
 export const initialCooks: Cook[] = [
-    { id: "cook1", name: "Juan" },
-    { id: "cook2", name: "Maria" },
-    { id: "cook3", name: "Pedro" },
+    { id: "usr05", name: "Juan" },
+    { id: "usr06", name: "Maria" },
+    { id: "usr07", name: "Pedro" },
   ];
   
 export const initialInventoryItems: InventoryItem[] = [
