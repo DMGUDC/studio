@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -50,42 +50,42 @@ const initialDishes = [
 ]
 
 const initialInventoryItems = [
-    { id: "inv1", name: "Tomates", unit: "kg" },
-    { id: "inv2", name: "Pechuga de Pollo", unit: "kg" },
-    { id: "inv3", name: "Queso Mozzarella", unit: "kg" },
-    { id: "inv4", name: "Harina de Trigo", unit: "kg" },
-    { id: "inv5", name: "Aceite de Oliva", unit: "litros" },
-    { id: "inv6", name: "Vino Tinto", unit: "botellas" },
-    { id: "inv7", name: "Servilletas", unit: "paquetes" },
-    { id: "inv8", name: "Sal", unit: "kg" },
-    { id: "inv9", name: "Levadura", unit: "g" },
-    { id: "inv10", name: "Salsa de tomate", unit: "litros"},
-    { id: "inv11", name: "Lechuga Romana", unit: "unidades"},
-    { id: "inv12", name: "Yemas de huevo", unit: "unidades"},
-    { id: "inv13", name: "Anchoas", unit: "latas"},
-    { id: "inv14", name: "Ajo", unit: "cabezas"},
-    { id: "inv15", name: "Mostaza", unit: "g"},
-    { id: "inv16", name: "Pasta", unit: "kg"},
-    { id: "inv17", name: "Panceta", unit: "kg"},
-    { id: "inv18", name: "Queso Pecorino", unit: "kg"},
-    { id: "inv19", name: "Carne de res", unit: "kg"},
-    { id: "inv20", name: "Pan de hamburguesa", unit: "unidades"},
-    { id: "inv21", name: "Papas", unit: "kg"},
+    { id: "inv1", name: "Tomates", unit: "kg", price: 1.50 },
+    { id: "inv2", name: "Pechuga de Pollo", unit: "kg", price: 8.00 },
+    { id: "inv3", name: "Queso Mozzarella", unit: "kg", price: 7.50 },
+    { id: "inv4", name: "Harina de Trigo", unit: "kg", price: 1.00 },
+    { id: "inv5", name: "Aceite de Oliva", unit: "litros", price: 12.00 },
+    { id: "inv6", name: "Vino Tinto", unit: "botellas", price: 9.50 },
+    { id: "inv7", name: "Servilletas", unit: "paquetes", price: 2.00 },
+    { id: "inv8", name: "Sal", unit: "kg", price: 0.50 },
+    { id: "inv9", name: "Levadura", unit: "g", price: 0.02 }, // Price per gram
+    { id: "inv10", name: "Salsa de tomate", unit: "litros", price: 2.50},
+    { id: "inv11", name: "Lechuga Romana", unit: "unidades", price: 0.80},
+    { id: "inv12", name: "Yemas de huevo", unit: "unidades", price: 0.20},
+    { id: "inv13", name: "Anchoas", unit: "latas", price: 3.00},
+    { id: "inv14", name: "Ajo", unit: "cabezas", price: 0.30},
+    { id: "inv15", name: "Mostaza", unit: "g", price: 0.01}, // Price per gram
+    { id: "inv16", name: "Pasta", unit: "kg", price: 2.00},
+    { id: "inv17", name: "Panceta", unit: "kg", price: 15.00},
+    { id: "inv18", name: "Queso Pecorino", unit: "kg", price: 25.00},
+    { id: "inv19", name: "Carne de res", unit: "kg", price: 10.00},
+    { id: "inv20", name: "Pan de hamburguesa", unit: "unidades", price: 0.50},
+    { id: "inv21", name: "Papas", unit: "kg", price: 1.20},
 ];
 
 const initialSubRecipes = [
-    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10, ingredients: [{inventoryId: "inv4", quantity: 0.5}, {inventoryId: "inv9", quantity: 10}, {inventoryId: "inv8", quantity: 0.02}] },
-    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5, ingredients: [{inventoryId: "inv10", quantity: 0.1}, {inventoryId: "inv3", quantity: 0.2}] },
+    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10, ingredients: [{inventoryId: "inv4", quantity: 0.5, wastage: 0}, {inventoryId: "inv9", quantity: 10, wastage: 0}, {inventoryId: "inv8", quantity: 0.02, wastage: 0}] },
+    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5, ingredients: [{inventoryId: "inv10", quantity: 0.1, wastage: 5}, {inventoryId: "inv3", quantity: 0.2, wastage: 0}] },
     { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", prepTime: 15, ingredients: [] },
-    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5, ingredients: [{inventoryId: "inv11", quantity: 1}] },
-    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7, ingredients: [{inventoryId: "inv12", quantity: 2}, {inventoryId: "inv13", quantity: 0.5}, {inventoryId: "inv14", quantity: 0.25}, {inventoryId: "inv15", quantity: 10}, {inventoryId: "inv5", quantity: 0.1}] },
-    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12, ingredients: [{inventoryId: "inv16", quantity: 0.2}] },
-    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5, ingredients: [{inventoryId: "inv17", quantity: 0.1}] },
-    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4, ingredients: [{inventoryId: "inv12", quantity: 2}, {inventoryId: "inv18", quantity: 0.05}] },
+    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5, ingredients: [{inventoryId: "inv11", quantity: 1, wastage: 15}] },
+    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7, ingredients: [{inventoryId: "inv12", quantity: 2, wastage: 0}, {inventoryId: "inv13", quantity: 0.5, wastage: 10}, {inventoryId: "inv14", quantity: 0.25, wastage: 20}, {inventoryId: "inv15", quantity: 10, wastage: 0}, {inventoryId: "inv5", quantity: 0.1, wastage: 0}] },
+    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12, ingredients: [{inventoryId: "inv16", quantity: 0.2, wastage: 0}] },
+    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5, ingredients: [{inventoryId: "inv17", quantity: 0.1, wastage: 30}] },
+    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4, ingredients: [{inventoryId: "inv12", quantity: 2, wastage: 0}, {inventoryId: "inv18", quantity: 0.05, wastage: 0}] },
     { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", prepTime: 2, ingredients: [] },
-    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8, ingredients: [{inventoryId: "inv19", quantity: 0.25}] },
-    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3, ingredients: [{inventoryId: "inv20", quantity: 1}, {inventoryId: "inv11", quantity: 0.1}, {inventoryId: "inv1", quantity: 0.1}] },
-    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10, ingredients: [{inventoryId: "inv21", quantity: 0.3}] },
+    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8, ingredients: [{inventoryId: "inv19", quantity: 0.25, wastage: 25}] },
+    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3, ingredients: [{inventoryId: "inv20", quantity: 1, wastage: 0}, {inventoryId: "inv11", quantity: 0.1, wastage: 15}, {inventoryId: "inv1", quantity: 0.1, wastage: 10}] },
+    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10, ingredients: [{inventoryId: "inv21", quantity: 0.3, wastage: 20}] },
 ]
 
 type Dish = {
@@ -99,6 +99,7 @@ type Dish = {
 type Ingredient = {
     inventoryId: string;
     quantity: number;
+    wastage: number; // Percentage
 }
 
 type SubRecipe = {
@@ -123,7 +124,7 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
 
     const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number) => {
         const newIngredients = [...ingredients];
-        if (field === 'quantity') {
+        if (field === 'quantity' || field === 'wastage') {
             newIngredients[index][field] = Number(value);
         } else {
             newIngredients[index][field] = value as string;
@@ -132,7 +133,7 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
     }
     
     const addIngredient = () => {
-        setIngredients([...ingredients, { inventoryId: '', quantity: 0 }]);
+        setIngredients([...ingredients, { inventoryId: '', quantity: 0, wastage: 0 }]);
     }
 
     const removeIngredient = (index: number) => {
@@ -159,29 +160,48 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
 
             <div className="space-y-2">
                 <Label>Ingredientes</Label>
-                <div className="space-y-2 rounded-md border p-4">
-                {ingredients.map((ing, index) => (
-                    <div key={index} className="grid grid-cols-3 items-center gap-2">
+                <div className="space-y-2 rounded-md border p-4 max-h-60 overflow-y-auto">
+                <div className="grid grid-cols-12 items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <div className="col-span-5">Ingrediente</div>
+                    <div className="col-span-2">Cantidad</div>
+                    <div className="col-span-2">Merma (%)</div>
+                    <div className="col-span-2">Costo</div>
+                    <div className="col-span-1"></div>
+                </div>
+                {ingredients.map((ing, index) => {
+                    const invItem = initialInventoryItems.find(i => i.id === ing.inventoryId);
+                    const cost = invItem ? invItem.price * ing.quantity * (1 + ing.wastage / 100) : 0;
+                    return (
+                    <div key={index} className="grid grid-cols-12 items-center gap-2">
                          <select
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="col-span-5 flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             value={ing.inventoryId}
                             onChange={(e) => handleIngredientChange(index, 'inventoryId', e.target.value)}
                         >
-                            <option value="" disabled>Seleccionar ingrediente</option>
+                            <option value="" disabled>Seleccionar</option>
                             {initialInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
 
                         <Input 
                             type="number" 
-                            placeholder="Cantidad"
+                            className="col-span-2"
+                            placeholder="Cant."
                             value={ing.quantity}
                             onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
                         />
-                        <Button variant="ghost" size="icon" onClick={() => removeIngredient(index)}>
+                         <Input 
+                            type="number"
+                            className="col-span-2"
+                            placeholder="%"
+                            value={ing.wastage}
+                            onChange={(e) => handleIngredientChange(index, 'wastage', e.target.value)}
+                        />
+                        <div className="col-span-2 text-sm text-center">${cost.toFixed(2)}</div>
+                        <Button variant="ghost" size="icon" className="col-span-1" onClick={() => removeIngredient(index)}>
                             <Trash className="h-4 w-4 text-destructive" />
                         </Button>
                     </div>
-                ))}
+                )})}
                  <Button variant="outline" size="sm" onClick={addIngredient} className="mt-2">
                     <PlusCircle className="mr-2 h-4 w-4" /> Añadir Ingrediente
                 </Button>
@@ -203,6 +223,23 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
     const [category, setCategory] = useState(dish?.category || "");
     const [price, setPrice] = useState(dish?.price || 0);
     const [selectedSubRecipeIds, setSelectedSubRecipeIds] = useState<string[]>(dish?.subRecipeIds || []);
+
+    const suggestedCost = useMemo(() => {
+        let totalCost = 0;
+        selectedSubRecipeIds.forEach(srId => {
+            const subRecipe = allSubRecipes.find(sr => sr.id === srId);
+            if (subRecipe) {
+                subRecipe.ingredients.forEach(ing => {
+                    const invItem = initialInventoryItems.find(i => i.id === ing.inventoryId);
+                    if (invItem) {
+                        const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
+                        totalCost += rawQuantity * invItem.price;
+                    }
+                })
+            }
+        });
+        return totalCost;
+    }, [selectedSubRecipeIds, allSubRecipes]);
 
     const handleSave = () => {
         onSave({ name, category, price, subRecipeIds: selectedSubRecipeIds });
@@ -226,9 +263,15 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
                     <Input id="dish-category" value={category} onChange={e => setCategory(e.target.value)} placeholder="Ej: Pizzas"/>
                 </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="dish-price">Precio</Label>
-                <Input id="dish-price" type="number" value={price} onChange={e => setPrice(Number(e.target.value))}/>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="dish-price">Precio de Venta</Label>
+                    <Input id="dish-price" type="number" value={price} onChange={e => setPrice(Number(e.target.value))}/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="dish-cost">Costo Sugerido</Label>
+                    <Input id="dish-cost" type="text" value={`$${suggestedCost.toFixed(2)}`} readOnly disabled/>
+                </div>
             </div>
             <div className="space-y-2">
                 <Label>Sub-recetas</Label>
@@ -472,7 +515,7 @@ export default function MenuPage() {
     </Dialog>
     
     <Dialog open={isSubRecipeModalOpen} onOpenChange={setSubRecipeModalOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle>{editingSubRecipe ? 'Editar Sub-receta' : 'Nueva Sub-receta'}</DialogTitle>
                  <DialogDescription>
