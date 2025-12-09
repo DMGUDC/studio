@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,8 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Timer, User } from "lucide-react";
+import { Timer, User, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 type Cook = {
   id: string;
@@ -29,6 +35,7 @@ type Cook = {
 type SubRecipe = {
   id: string;
   name: string;
+  description: string;
   status: "Pendiente" | "Preparando" | "Listo";
   assignedCook?: string; // Cook ID
 };
@@ -58,23 +65,23 @@ const initialOrders: Order[] = [
     id: "ORD002",
     table: "Mesa 2",
     items: [
-      { 
-        name: "Pizza Margherita", 
-        quantity: 1, 
+      {
+        name: "Pizza Margherita",
+        quantity: 1,
         subRecipes: [
-          { id: "sr1", name: "Preparar masa", status: "Listo" },
-          { id: "sr2", name: "Añadir salsa y queso", status: "Preparando", assignedCook: "cook1" },
-          { id: "sr3", name: "Hornear", status: "Pendiente" },
-        ]
+          { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", status: "Listo" },
+          { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", status: "Preparando", assignedCook: "cook1" },
+          { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", status: "Pendiente" },
+        ],
       },
-      { 
-        name: "Ensalada César", 
-        quantity: 1, 
+      {
+        name: "Ensalada César",
+        quantity: 1,
         notes: "Sin crutones",
         subRecipes: [
-          { id: "sr4", name: "Lavar y cortar lechuga", status: "Preparando", assignedCook: "cook2" },
-          { id: "sr5", name: "Preparar aderezo", status: "Pendiente" },
-        ]
+          { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", status: "Preparando", assignedCook: "cook2" },
+          { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", status: "Pendiente" },
+        ],
       },
     ],
     createdAt: Date.now() - 2 * 60 * 1000,
@@ -82,188 +89,271 @@ const initialOrders: Order[] = [
   {
     id: "ORD003",
     table: "Terraza 1",
-    items: [{ 
-      name: "Pasta Carbonara", 
-      quantity: 2,
-      subRecipes: [
-        { id: "sr6", name: "Hervir pasta", status: "Listo" },
-        { id: "sr7", name: "Saltear panceta", status: "Listo" },
-        { id: "sr8", name: "Mezclar salsa", status: "Preparando", assignedCook: "cook1" },
-        { id: "sr9", name: "Emplatar", status: "Pendiente" },
-      ]
-    }],
+    items: [
+      {
+        name: "Pasta Carbonara",
+        quantity: 2,
+        subRecipes: [
+          { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", status: "Listo" },
+          { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", status: "Listo" },
+          { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", status: "Preparando", assignedCook: "cook1" },
+          { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", status: "Pendiente" },
+        ],
+      },
+    ],
     createdAt: Date.now() - 5 * 60 * 1000,
   },
   {
     id: "ORD004",
     table: "Mesa 8",
     items: [
-        { 
-          name: "Hamburguesa XChef", 
-          quantity: 1, 
-          notes: "Poco hecha",
-          subRecipes: [
-            { id: "sr10", name: "Cocinar carne", status: "Preparando", assignedCook: "cook3" },
-            { id: "sr11", name: "Montar hamburguesa", status: "Pendiente" },
-          ]
-        },
-        { 
-          name: "Papas Fritas", 
-          quantity: 1,
-          subRecipes: [
-            { id: "sr12", name: "Freír papas", status: "Pendiente" }
-          ]
-        },
+      {
+        name: "Hamburguesa XChef",
+        quantity: 1,
+        notes: "Poco hecha",
+        subRecipes: [
+          { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", status: "Preparando", assignedCook: "cook3" },
+          { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", status: "Pendiente" },
+        ],
+      },
+      {
+        name: "Papas Fritas",
+        quantity: 1,
+        subRecipes: [
+          { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", status: "Pendiente" },
+        ],
+      },
     ],
     createdAt: Date.now() - 8 * 60 * 1000,
   },
 ];
 
-const getSubRecipeStatusVariant = (status: SubRecipe['status']) => {
+const getSubRecipeStatusVariant = (status: SubRecipe["status"]) => {
   switch (status) {
-    case 'Pendiente': return 'destructive';
-    case 'Preparando': return 'secondary';
-    case 'Listo': return 'default';
-    default: return 'outline';
+    case "Pendiente":
+      return "destructive";
+    case "Preparando":
+      return "secondary";
+    case "Listo":
+      return "default";
+    default:
+      return "outline";
   }
-}
+};
 
-function OrderTicket({ order, onSubRecipeStatusChange, onAssignCook }: { 
-  order: Order; 
-  onSubRecipeStatusChange: (orderId: string, itemId: string, subRecipeId: string, status: SubRecipe['status']) => void;
-  onAssignCook: (orderId: string, itemId: string, subRecipeId: string, cookId: string) => void;
+function OrderTicket({
+  order,
+  onSubRecipeStatusChange,
+  onAssignCook,
+  onShowSubRecipe,
+}: {
+  order: Order;
+  onSubRecipeStatusChange: (
+    orderId: string,
+    itemId: string,
+    subRecipeId: string,
+    status: SubRecipe["status"]
+  ) => void;
+  onAssignCook: (
+    orderId: string,
+    itemId: string,
+    subRecipeId: string,
+    cookId: string
+  ) => void;
+  onShowSubRecipe: (subRecipe: SubRecipe) => void;
 }) {
-    const [elapsedTime, setElapsedTime] = useState("");
+  const [elapsedTime, setElapsedTime] = useState("");
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            const seconds = Math.floor((Date.now() - order.createdAt) / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const displaySeconds = seconds % 60;
-            setElapsedTime(`${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`);
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [order.createdAt]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const seconds = Math.floor((Date.now() - order.createdAt) / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const displaySeconds = seconds % 60;
+      setElapsedTime(
+        `${minutes.toString().padStart(2, "0")}:${displaySeconds
+          .toString()
+          .padStart(2, "0")}`
+      );
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [order.createdAt]);
 
-    const urgencyColor = () => {
-        const minutes = Math.floor((Date.now() - order.createdAt) / (1000 * 60));
-        if (minutes > 10) return "border-red-500 bg-red-500/10";
-        if (minutes > 5) return "border-yellow-500 bg-yellow-500/10";
-        return "border-border";
+  const urgencyColor = () => {
+    const minutes = Math.floor((Date.now() - order.createdAt) / (1000 * 60));
+    if (minutes > 10) return "border-red-500 bg-red-500/10";
+    if (minutes > 5) return "border-yellow-500 bg-yellow-500/10";
+    return "border-border";
+  };
+
+  const handleStatusChange = (
+    itemId: string,
+    subRecipeId: string,
+    currentStatus: SubRecipe["status"]
+  ) => {
+    const nextStatus: SubRecipe["status"] | null =
+      currentStatus === "Pendiente"
+        ? "Preparando"
+        : currentStatus === "Preparando"
+        ? "Listo"
+        : null;
+    if (nextStatus) {
+      onSubRecipeStatusChange(order.id, itemId, subRecipeId, nextStatus);
     }
-    
-    const handleStatusChange = (itemId: string, subRecipeId: string, currentStatus: SubRecipe['status']) => {
-        const nextStatus: SubRecipe['status'] | null = currentStatus === 'Pendiente' ? 'Preparando' : currentStatus === 'Preparando' ? 'Listo' : null;
-        if(nextStatus) {
-            onSubRecipeStatusChange(order.id, itemId, subRecipeId, nextStatus);
-        }
-    }
+  };
 
-    return (
-        <Card className={cn("flex flex-col", urgencyColor())}>
-            <CardHeader className="flex-row items-center justify-between space-y-0 p-3 bg-muted/50">
-                <CardTitle className="text-lg font-headline">{order.table}</CardTitle>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                    <Timer className="h-4 w-4" />
-                    {elapsedTime}
-                </div>
-            </CardHeader>
-            <CardContent className="flex-1 p-0">
-                {order.items.map((item, index) => (
-                    <div key={`${item.name}-${index}`} className="p-3">
-                        <div className="flex justify-between items-start mb-2">
-                           <div>
-                             <span className="font-bold">{item.name}</span>
-                             {item.notes && <p className="text-xs text-muted-foreground">Nota: {item.notes}</p>}
-                           </div>
-                           <Badge variant="secondary" className="text-base">x{item.quantity}</Badge>
-                        </div>
-                        <div className="space-y-2">
-                          {item.subRecipes.map(sr => (
-                            <div key={sr.id} className="flex items-center gap-2 p-2 rounded-md bg-background">
-                              <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium">{sr.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant={getSubRecipeStatusVariant(sr.status)}>{sr.status}</Badge>
-                                   <Select 
-                                     value={sr.assignedCook}
-                                     onValueChange={(cookId) => onAssignCook(order.id, item.name, sr.id, cookId)}
-                                     disabled={sr.status === 'Listo'}
-                                   >
-                                    <SelectTrigger className="h-7 text-xs w-auto gap-1 pl-2 pr-1">
-                                      <User className="h-3 w-3 text-muted-foreground" />
-                                      <SelectValue placeholder="Asignar..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {cooks.map(cook => (
-                                        <SelectItem key={cook.id} value={cook.id}>{cook.name}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                               {sr.status !== 'Listo' && (
-                                <Button 
-                                    size="sm" 
-                                    variant={sr.status === 'Pendiente' ? 'outline' : 'default'}
-                                    onClick={() => handleStatusChange(item.name, sr.id, sr.status)}
-                                    className={cn(sr.status === 'Preparando' && 'bg-green-600 hover:bg-green-700 text-white')}
-                                >
-                                    {sr.status === 'Pendiente' ? 'Empezar' : 'Listo'}
-                                </Button>
-                               )}
-                            </div>
+  return (
+    <Card className={cn("flex flex-col", urgencyColor())}>
+      <CardHeader className="flex-row items-center justify-between space-y-0 p-3 bg-muted/50">
+        <CardTitle className="text-lg font-headline">{order.table}</CardTitle>
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Timer className="h-4 w-4" />
+          {elapsedTime}
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 p-0">
+        {order.items.map((item, index) => (
+          <div key={`${item.name}-${index}`} className="p-3">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <span className="font-bold">{item.name}</span>
+                {item.notes && (
+                  <p className="text-xs text-muted-foreground">
+                    Nota: {item.notes}
+                  </p>
+                )}
+              </div>
+              <Badge variant="secondary" className="text-base">
+                x{item.quantity}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              {item.subRecipes.map((sr) => (
+                <div
+                  key={sr.id}
+                  className="flex items-center gap-2 p-2 rounded-md bg-background"
+                >
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium">{sr.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getSubRecipeStatusVariant(sr.status)}>
+                        {sr.status}
+                      </Badge>
+                      <Select
+                        value={sr.assignedCook}
+                        onValueChange={(cookId) =>
+                          onAssignCook(order.id, item.name, sr.id, cookId)
+                        }
+                        disabled={sr.status === "Listo"}
+                      >
+                        <SelectTrigger className="h-7 text-xs w-auto gap-1 pl-2 pr-1">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          <SelectValue placeholder="Asignar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cooks.map((cook) => (
+                            <SelectItem key={cook.id} value={cook.id}>
+                              {cook.name}
+                            </SelectItem>
                           ))}
-                        </div>
-                        {index < order.items.length - 1 && <Separator className="mt-3"/>}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onShowSubRecipe(sr)}>
+                        <BookOpen className="h-4 w-4" />
+                      </Button>
                     </div>
-                ))}
-            </CardContent>
-        </Card>
-    );
+                  </div>
+                  {sr.status !== "Listo" && (
+                    <Button
+                      size="sm"
+                      variant={sr.status === "Pendiente" ? "outline" : "default"}
+                      onClick={() =>
+                        handleStatusChange(item.name, sr.id, sr.status)
+                      }
+                      className={cn(
+                        sr.status === "Preparando" &&
+                          "bg-green-600 hover:bg-green-700 text-white"
+                      )}
+                    >
+                      {sr.status === "Pendiente" ? "Empezar" : "Listo"}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {index < order.items.length - 1 && <Separator className="mt-3" />}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
 }
-
 
 export default function CocinaPage() {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [selectedSubRecipe, setSelectedSubRecipe] = useState<SubRecipe | null>(null);
+  const [isDetailsOpen, setDetailsOpen] = useState(false);
 
-  const updateSubRecipe = (orderId: string, itemId: string, subRecipeId: string, updates: Partial<SubRecipe>): void => {
-    setOrders(prevOrders => 
-        prevOrders.map(order => {
-            if (order.id !== orderId) return order;
+  const updateSubRecipe = (
+    orderId: string,
+    itemId: string,
+    subRecipeId: string,
+    updates: Partial<SubRecipe>
+  ): void => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+        if (order.id !== orderId) return order;
 
-            const updatedItems = order.items.map(item => {
-                if (item.name !== itemId) return item;
+        const updatedItems = order.items.map((item) => {
+          if (item.name !== itemId) return item;
 
-                const updatedSubRecipes = item.subRecipes.map(sr => 
-                    sr.id === subRecipeId ? { ...sr, ...updates } : sr
-                );
-                return { ...item, subRecipes: updatedSubRecipes };
-            });
+          const updatedSubRecipes = item.subRecipes.map((sr) =>
+            sr.id === subRecipeId ? { ...sr, ...updates } : sr
+          );
+          return { ...item, subRecipes: updatedSubRecipes };
+        });
 
-            return { ...order, items: updatedItems };
-        })
+        return { ...order, items: updatedItems };
+      })
     );
   };
-  
-  const handleAssignCook = (orderId: string, itemId: string, subRecipeId: string, cookId: string) => {
+
+  const handleAssignCook = (
+    orderId: string,
+    itemId: string,
+    subRecipeId: string,
+    cookId: string
+  ) => {
     updateSubRecipe(orderId, itemId, subRecipeId, { assignedCook: cookId });
   };
-  
-  const handleSubRecipeStatusChange = (orderId: string, itemId: string, subRecipeId: string, status: SubRecipe['status']) => {
-     updateSubRecipe(orderId, itemId, subRecipeId, { status });
+
+  const handleSubRecipeStatusChange = (
+    orderId: string,
+    itemId: string,
+    subRecipeId: string,
+    status: SubRecipe["status"]
+  ) => {
+    updateSubRecipe(orderId, itemId, subRecipeId, { status });
   };
+  
+  const handleShowSubRecipe = (subRecipe: SubRecipe) => {
+    setSelectedSubRecipe(subRecipe);
+    setDetailsOpen(true);
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setOrders(prevOrders => {
-        return prevOrders.map(order => {
-          const allSubRecipesDone = order.items.every(item => item.subRecipes.every(sr => sr.status === 'Listo'));
-          if (allSubRecipesDone) {
-            return null; // This order will be filtered out
-          }
-          return order;
-        }).filter((order): order is Order => order !== null);
+      setOrders((prevOrders) => {
+        return prevOrders
+          .map((order) => {
+            const allSubRecipesDone = order.items.every((item) =>
+              item.subRecipes.every((sr) => sr.status === "Listo")
+            );
+            if (allSubRecipesDone) {
+              return null; // This order will be filtered out
+            }
+            return order;
+          })
+          .filter((order): order is Order => order !== null);
       });
     }, 2000); // Check every 2 seconds if an order is complete
 
@@ -272,19 +362,33 @@ export default function CocinaPage() {
 
   return (
     <div className="h-full">
-      <h2 className="text-2xl font-headline mb-4 text-center">Platillos ({orders.length})</h2>
+      <h2 className="text-2xl font-headline mb-4 text-center">
+        Platillos ({orders.length})
+      </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
         {orders
           .sort((a, b) => a.createdAt - b.createdAt)
-          .map(order => (
-            <OrderTicket 
-              key={order.id} 
-              order={order} 
+          .map((order) => (
+            <OrderTicket
+              key={order.id}
+              order={order}
               onSubRecipeStatusChange={handleSubRecipeStatusChange}
               onAssignCook={handleAssignCook}
+              onShowSubRecipe={handleShowSubRecipe}
             />
-        ))}
+          ))}
       </div>
+      <Dialog open={isDetailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{selectedSubRecipe?.name}</DialogTitle>
+                <DialogDescription>
+                    Pasos para la preparación:
+                </DialogDescription>
+            </DialogHeader>
+            <p className="py-4 text-sm">{selectedSubRecipe?.description}</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
