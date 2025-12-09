@@ -26,7 +26,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { Bar, BarChart as BarChartComponent } from "recharts";
+import { Bar, BarChart as BarChartComponent, XAxis, YAxis } from "recharts";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { useMemo } from "react";
 import { isToday, getMonth, format } from "date-fns";
