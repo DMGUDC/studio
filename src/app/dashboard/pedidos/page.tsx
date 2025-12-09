@@ -43,6 +43,7 @@ import {
     SelectValue,
   } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const initialOrders = [
   {
@@ -340,6 +341,15 @@ export default function PedidosPage() {
 
   return (
     <>
+    <style jsx>{`
+      @keyframes glow {
+        0%, 100% { background-color: transparent; }
+        50% { background-color: hsla(140, 80%, 85%, 0.5); }
+      }
+      .glow-listo {
+        animation: glow 2s infinite;
+      }
+    `}</style>
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -375,7 +385,10 @@ export default function PedidosPage() {
           </TableHeader>
           <TableBody>
             {orders.map((order) => (
-              <TableRow key={order.id}>
+              <TableRow 
+                key={order.id}
+                className={cn({ 'glow-listo': order.status === 'Listo' })}
+              >
                 <TableCell className="font-medium">{order.id}</TableCell>
                 <TableCell>{order.table}</TableCell>
                 <TableCell>{order.waiter}</TableCell>
