@@ -3,9 +3,21 @@
 import { useState, useRef, DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, PlusCircle, Users, Save, X } from "lucide-react";
+import { Edit, PlusCircle, Users, Save, X, Square, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const initialFloors = {
   piso1: {
@@ -34,6 +46,7 @@ const initialFloors = {
 
 type Table = typeof initialFloors.piso1.tables[0];
 type Floors = typeof initialFloors;
+type FloorKey = keyof Floors;
 
 const statusStyles = {
   disponible: "bg-green-500/20 border-green-600 text-green-800",
@@ -48,14 +61,15 @@ const shapeStyles = {
 
 export default function MesasPage() {
   const [floors, setFloors] = useState<Floors>(initialFloors);
+  const [selectedFloor, setSelectedFloor] = useState<FloorKey>("piso1");
   const [isEditing, setIsEditing] = useState(false);
-  const dragInfo = useRef<{ floorKey: keyof Floors; tableId: number; offsetX: number; offsetY: number } | null>(null);
+  const dragInfo = useRef<{ tableId: number; offsetX: number; offsetY: number } | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
   const [originalFloors, setOriginalFloors] = useState<Floors>(initialFloors);
 
   const handleEditToggle = () => {
     if(!isEditing) {
-        setOriginalFloors(floors);
+        setOriginalFloors(JSON.parse(JSON.stringify(floors))); // Deep copy
     }
     setIsEditing(!isEditing);
   };
@@ -71,19 +85,16 @@ export default function MesasPage() {
     console.log("Layout guardado:", floors);
   };
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, table: Table, floorKey: keyof Floors) => {
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, table: Table) => {
     if (!isEditing || !layoutRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const layoutRect = layoutRef.current.getBoundingClientRect();
     
     dragInfo.current = {
-      floorKey,
       tableId: table.id,
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
     };
     e.dataTransfer.effectAllowed = 'move';
-    // Use a transparent image to hide the default drag ghost
     const img = new Image();
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
     e.dataTransfer.setDragImage(img, 0, 0);
@@ -95,7 +106,7 @@ export default function MesasPage() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, floorKey: keyof Floors) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     if (!isEditing || !dragInfo.current || !layoutRef.current) return;
     e.preventDefault();
 
@@ -107,31 +118,73 @@ export default function MesasPage() {
     
     setFloors(prevFloors => {
         const newFloors = { ...prevFloors };
-        const tables = newFloors[floorKey].tables.map(table => {
+        const tables = newFloors[selectedFloor].tables.map(table => {
             if (table.id === tableId) {
                 return { ...table, x: Math.max(0, Math.min(newX, 100 - (96 / layoutRect.width * 100))), y: Math.max(0, Math.min(newY, 100 - (96 / layoutRect.height * 100))) };
             }
             return table;
         });
-        newFloors[floorKey] = { ...newFloors[floorKey], tables };
+        newFloors[selectedFloor] = { ...newFloors[selectedFloor], tables };
         return newFloors;
     });
 
     dragInfo.current = null;
   };
+  
+  const addTable = (shape: 'square' | 'round') => {
+      const newTable: Table = {
+          id: Date.now(),
+          name: `Mesa ${floors[selectedFloor].tables.length + 1}`,
+          status: 'disponible',
+          x: 5,
+          y: 5,
+          shape: shape
+      };
+
+      setFloors(prev => ({
+          ...prev,
+          [selectedFloor]: {
+              ...prev[selectedFloor],
+              tables: [...prev[selectedFloor].tables, newTable]
+          }
+      }))
+  }
+
+  const currentFloor = floors[selectedFloor];
 
   return (
     <div className="flex h-full flex-col">
-      <Tabs defaultValue="piso1" className="flex flex-1 flex-col">
         <div className="flex items-center justify-between gap-4">
-          <TabsList>
-            {Object.entries(floors).map(([key, floor]) => (
-                <TabsTrigger key={key} value={key}>{floor.name}</TabsTrigger>
-            ))}
-          </TabsList>
-          <div className="flex gap-2">
+            <Select value={selectedFloor} onValueChange={(val) => setSelectedFloor(val as FloorKey)}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Seleccionar piso" />
+                </SelectTrigger>
+                <SelectContent>
+                {Object.entries(floors).map(([key, floor]) => (
+                    <SelectItem key={key} value={key}>{floor.name}</SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+
+            <div className="flex gap-2">
             {isEditing ? (
               <>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Mesa
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => addTable('square')}>
+                            <Square className="mr-2 h-4 w-4" /> Cuadrada
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => addTable('round')}>
+                             <Circle className="mr-2 h-4 w-4" /> Redonda
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="outline" onClick={handleCancelEdit}>
                   <X className="mr-2 h-4 w-4" />
                   Cancelar
@@ -156,44 +209,41 @@ export default function MesasPage() {
           </div>
         </div>
         
-        {Object.entries(floors).map(([key, floor]) => (
-            <TabsContent key={key} value={key} className="flex-1 mt-6">
-                <Card className="h-full min-h-[60vh]">
-                <CardContent 
-                    ref={layoutRef}
-                    className="relative h-full p-4"
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, key as keyof Floors)}
+        <div className="flex-1 mt-6">
+            <Card className="h-full min-h-[60vh]">
+            <CardContent 
+                ref={layoutRef}
+                className="relative h-full p-4"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+            >
+                {currentFloor.tables.map((table) => (
+                <div
+                    key={table.id}
+                    draggable={isEditing}
+                    onDragStart={(e) => handleDragStart(e, table)}
+                    className={cn(
+                    "absolute flex flex-col items-center justify-center border-2 shadow-sm transition-transform",
+                     isEditing ? "cursor-move hover:scale-105" : "cursor-pointer",
+                    shapeStyles[table.shape as keyof typeof shapeStyles] || shapeStyles.square,
+                    statusStyles[table.status as keyof typeof statusStyles],
+                    table.status === 'ocupada' && 'bg-primary text-primary-foreground'
+                    )}
+                    style={{ left: `${table.x}%`, top: `${table.y}%` }}
                 >
-                    {floor.tables.map((table) => (
-                    <div
-                        key={table.id}
-                        draggable={isEditing}
-                        onDragStart={(e) => handleDragStart(e, table, key as keyof Floors)}
-                        className={cn(
-                        "absolute flex flex-col items-center justify-center border-2 shadow-sm transition-transform",
-                         isEditing ? "cursor-move hover:scale-105" : "cursor-pointer",
-                        shapeStyles[table.shape as keyof typeof shapeStyles] || shapeStyles.square,
-                        statusStyles[table.status as keyof typeof statusStyles],
-                        table.status === 'ocupada' && 'bg-primary text-primary-foreground'
-                        )}
-                        style={{ left: `${table.x}%`, top: `${table.y}%` }}
-                    >
-                        <span className="font-bold">{table.name}</span>
-                        <span className="text-xs capitalize">{table.status}</span>
-                        {table.status === "ocupada" && (
-                        <div className="mt-1 flex items-center text-xs">
-                            <Users className="mr-1 h-3 w-3" />
-                            {table.people}
-                        </div>
-                        )}
+                    <span className="font-bold">{table.name}</span>
+                    <span className="text-xs capitalize">{table.status}</span>
+                    {table.status === "ocupada" && table.people && (
+                    <div className="mt-1 flex items-center text-xs">
+                        <Users className="mr-1 h-3 w-3" />
+                        {table.people}
                     </div>
-                    ))}
-                </CardContent>
-                </Card>
-            </TabsContent>
-        ))}
-      </Tabs>
+                    )}
+                </div>
+                ))}
+            </CardContent>
+            </Card>
+        </div>
     </div>
   );
 }
