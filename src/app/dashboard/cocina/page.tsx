@@ -191,6 +191,7 @@ function OrderTicket({
                       onClick={() =>
                         handleStatusChange(item.id, sr.id, sr.status)
                       }
+                      disabled={sr.status === 'Pendiente' && !sr.assignedCook}
                       className={cn(
                         sr.status === "Preparando" &&
                           "bg-green-600 hover:bg-green-700 text-white"
