@@ -38,6 +38,7 @@ type SubRecipe = {
   description: string;
   status: "Pendiente" | "Preparando" | "Listo";
   assignedCook?: string; // Cook ID
+  prepTime: number; // Estimated preparation time in minutes
 };
 
 type OrderItem = {
@@ -69,9 +70,9 @@ const initialOrders: Order[] = [
         name: "Pizza Margherita",
         quantity: 1,
         subRecipes: [
-          { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", status: "Listo" },
-          { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", status: "Preparando", assignedCook: "cook1" },
-          { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", status: "Pendiente" },
+          { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", status: "Listo", prepTime: 10 },
+          { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", status: "Preparando", assignedCook: "cook1", prepTime: 5 },
+          { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", status: "Pendiente", prepTime: 15 },
         ],
       },
       {
@@ -79,8 +80,8 @@ const initialOrders: Order[] = [
         quantity: 1,
         notes: "Sin crutones",
         subRecipes: [
-          { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", status: "Preparando", assignedCook: "cook2" },
-          { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", status: "Pendiente" },
+          { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", status: "Preparando", assignedCook: "cook2", prepTime: 5 },
+          { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", status: "Pendiente", prepTime: 7 },
         ],
       },
     ],
@@ -94,10 +95,10 @@ const initialOrders: Order[] = [
         name: "Pasta Carbonara",
         quantity: 2,
         subRecipes: [
-          { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", status: "Listo" },
-          { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", status: "Listo" },
-          { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", status: "Preparando", assignedCook: "cook1" },
-          { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", status: "Pendiente" },
+          { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", status: "Listo", prepTime: 12 },
+          { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", status: "Listo", prepTime: 5 },
+          { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", status: "Preparando", assignedCook: "cook1", prepTime: 4 },
+          { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", status: "Pendiente", prepTime: 2 },
         ],
       },
     ],
@@ -112,15 +113,15 @@ const initialOrders: Order[] = [
         quantity: 1,
         notes: "Poco hecha",
         subRecipes: [
-          { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", status: "Preparando", assignedCook: "cook3" },
-          { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", status: "Pendiente" },
+          { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", status: "Preparando", assignedCook: "cook3", prepTime: 8 },
+          { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", status: "Pendiente", prepTime: 3 },
         ],
       },
       {
         name: "Papas Fritas",
         quantity: 1,
         subRecipes: [
-          { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", status: "Pendiente" },
+          { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", status: "Pendiente", prepTime: 10 },
         ],
       },
     ],
@@ -162,28 +163,47 @@ function OrderTicket({
   ) => void;
   onShowSubRecipe: (subRecipe: SubRecipe) => void;
 }) {
-  const [elapsedTime, setElapsedTime] = useState("");
+  const [remainingTime, setRemainingTime] = useState("");
+  const [urgencyColor, setUrgencyColor] = useState("border-border");
+
+  const totalPrepTime = order.items.reduce(
+    (total, item) =>
+      total +
+      item.subRecipes.reduce((itemTotal, sr) => itemTotal + sr.prepTime, 0),
+    0
+  );
+  const deadline = order.createdAt + totalPrepTime * 60 * 1000;
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const seconds = Math.floor((Date.now() - order.createdAt) / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const displaySeconds = seconds % 60;
-      setElapsedTime(
-        `${minutes.toString().padStart(2, "0")}:${displaySeconds
-          .toString()
-          .padStart(2, "0")}`
+      const now = Date.now();
+      const timeLeft = deadline - now;
+      
+      if (timeLeft <= 0) {
+        setRemainingTime("00:00");
+        setUrgencyColor("border-red-500 bg-red-500/10");
+        return;
+      }
+
+      const minutes = Math.floor(timeLeft / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      setRemainingTime(
+        `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
       );
+
+      const percentageLeft = (timeLeft / (totalPrepTime * 60 * 1000)) * 100;
+      if (percentageLeft < 25) {
+        setUrgencyColor("border-red-500 bg-red-500/10");
+      } else if (percentageLeft < 50) {
+        setUrgencyColor("border-yellow-500 bg-yellow-500/10");
+      } else {
+        setUrgencyColor("border-green-500 bg-green-500/10");
+      }
+
     }, 1000);
     return () => clearInterval(timer);
-  }, [order.createdAt]);
+  }, [order.createdAt, totalPrepTime, deadline]);
 
-  const urgencyColor = () => {
-    const minutes = Math.floor((Date.now() - order.createdAt) / (1000 * 60));
-    if (minutes > 10) return "border-red-500 bg-red-500/10";
-    if (minutes > 5) return "border-yellow-500 bg-yellow-500/10";
-    return "border-border";
-  };
 
   const handleStatusChange = (
     itemId: string,
@@ -202,12 +222,12 @@ function OrderTicket({
   };
 
   return (
-    <Card className={cn("flex flex-col", urgencyColor())}>
+    <Card className={cn("flex flex-col", urgencyColor)}>
       <CardHeader className="flex-row items-center justify-between space-y-0 p-3 bg-muted/50">
         <CardTitle className="text-lg font-headline">{order.table}</CardTitle>
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Timer className="h-4 w-4" />
-          {elapsedTime}
+          {remainingTime}
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-0">
@@ -233,7 +253,7 @@ function OrderTicket({
                   className="flex items-center gap-2 p-2 rounded-md bg-background"
                 >
                   <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{sr.name}</p>
+                    <p className="text-sm font-medium">{sr.name} ({sr.prepTime} min)</p>
                     <div className="flex items-center gap-2">
                       <Badge variant={getSubRecipeStatusVariant(sr.status)}>
                         {sr.status}

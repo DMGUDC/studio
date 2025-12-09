@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label";
-import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, X } from "lucide-react"
+import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, Clock } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,18 +50,18 @@ const initialDishes = [
 ]
 
 const initialSubRecipes = [
-    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos." },
-    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada." },
-    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada." },
-    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes." },
-    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite." },
-    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete." },
-    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente." },
-    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente." },
-    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida." },
-    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado." },
-    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas." },
-    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes." },
+    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10 },
+    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5 },
+    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", prepTime: 15 },
+    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5 },
+    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7 },
+    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12 },
+    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5 },
+    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4 },
+    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", prepTime: 2 },
+    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8 },
+    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3 },
+    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10 },
 ]
 
 type Dish = {
@@ -76,15 +76,17 @@ type SubRecipe = {
     id: string;
     name: string;
     description: string;
+    prepTime: number; // in minutes
 }
 
 function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id'>) => void; subRecipe?: SubRecipe | null }) {
     const [name, setName] = useState(subRecipe?.name || "");
     const [description, setDescription] = useState(subRecipe?.description || "");
+    const [prepTime, setPrepTime] = useState(subRecipe?.prepTime || 0);
 
     const handleSave = () => {
-        if(name && description) {
-            onSave({ name, description });
+        if(name && description && prepTime > 0) {
+            onSave({ name, description, prepTime });
         }
     }
 
@@ -93,6 +95,10 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
             <div className="space-y-2">
                 <Label htmlFor="sub-recipe-name">Nombre de la Sub-receta</Label>
                 <Input id="sub-recipe-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Cortar vegetales"/>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="sub-recipe-time">Tiempo Estimado (min)</Label>
+                <Input id="sub-recipe-time" type="number" value={prepTime} onChange={e => setPrepTime(Number(e.target.value))} placeholder="Ej: 5"/>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="sub-recipe-description">Descripción de la Preparación</Label>
@@ -325,6 +331,7 @@ export default function MenuPage() {
                 <TableRow>
                   <TableHead className="w-[30%]">Nombre de Sub-Receta</TableHead>
                   <TableHead>Descripción</TableHead>
+                  <TableHead>Tiempo (min)</TableHead>
                   <TableHead>Asignada a Platillo</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
                 </TableRow>
@@ -336,6 +343,12 @@ export default function MenuPage() {
                         <TableRow key={sr.id}>
                             <TableCell className="font-medium">{sr.name}</TableCell>
                             <TableCell className="text-muted-foreground">{sr.description}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    {sr.prepTime}
+                                </div>
+                            </TableCell>
                             <TableCell>{assignedDish?.name || 'No asignada'}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
@@ -374,7 +387,7 @@ export default function MenuPage() {
             <DialogHeader>
                 <DialogTitle>{editingSubRecipe ? 'Editar Sub-receta' : 'Nueva Sub-receta'}</DialogTitle>
                  <DialogDescription>
-                    Añade los detalles para preparar esta sub-receta.
+                    Añade los detalles y el tiempo de preparación para esta sub-receta.
                 </DialogDescription>
             </DialogHeader>
             <SubRecipeForm onSave={handleSaveSubRecipe} subRecipe={editingSubRecipe} />
