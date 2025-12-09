@@ -56,23 +56,9 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            <span>Perfil</span>
-          </DropdownMenuItem>
            <DropdownMenuItem>
             <Camera className="mr-2 h-4 w-4" />
             <span>Editar Foto</span>
-          </DropdownMenuItem>
-          <Link href="/dashboard/facturacion">
-            <DropdownMenuItem>
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Facturación</span>
-            </DropdownMenuItem>
-          </Link>
-          <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Ajustes</span>
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
