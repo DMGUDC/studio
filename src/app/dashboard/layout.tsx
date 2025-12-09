@@ -10,8 +10,10 @@ import {
   LayoutDashboard,
   LineChart,
   LogOut,
+  Menu,
   Settings,
   Table,
+  Users,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -37,8 +39,10 @@ const navItems = [
   { href: "/dashboard/mesas", icon: Table, label: "Gestión de Mesas" },
   { href: "/dashboard/pedidos", icon: ClipboardList, label: "Pedidos" },
   { href: "/dashboard/cocina", icon: ChefHat, label: "KDS Cocina" },
+  { href: "/dashboard/menu", icon: Menu, label: "Menú" },
   { href: "/dashboard/inventario", icon: Boxes, label: "Inventario" },
   { href: "/dashboard/finanzas", icon: LineChart, label: "Finanzas" },
+  { href: "/dashboard/usuarios", icon: Users, label: "Usuarios" },
 ];
 
 const bottomNavItems = [
@@ -106,7 +110,7 @@ export default function DashboardLayout({
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">
                 <h1 className="text-lg font-semibold font-headline">
-                    {navItems.find(item => pathname === item.href)?.label || "Dashboard"}
+                    {navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard"}
                 </h1>
             </div>
             <UserNav />
