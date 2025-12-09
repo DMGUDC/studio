@@ -39,6 +39,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 const initialDishes = [
   { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"] },
@@ -49,18 +50,18 @@ const initialDishes = [
 ]
 
 const initialSubRecipes = [
-    { id: "sr1", name: "Preparar masa" },
-    { id: "sr2", name: "Añadir salsa y queso" },
-    { id: "sr3", name: "Hornear" },
-    { id: "sr4", name: "Lavar y cortar lechuga" },
-    { id: "sr5", name: "Preparar aderezo" },
-    { id: "sr6", name: "Hervir pasta" },
-    { id: "sr7", name: "Saltear panceta" },
-    { id: "sr8", name: "Mezclar salsa" },
-    { id: "sr9", name: "Emplatar" },
-    { id: "sr10", name: "Cocinar carne" },
-    { id: "sr11", name: "Montar hamburguesa" },
-    { id: "sr12", name: "Freír papas" },
+    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos." },
+    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada." },
+    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada." },
+    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes." },
+    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite." },
+    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete." },
+    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente." },
+    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente." },
+    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida." },
+    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado." },
+    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas." },
+    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes." },
 ]
 
 type Dish = {
@@ -74,10 +75,18 @@ type Dish = {
 type SubRecipe = {
     id: string;
     name: string;
+    description: string;
 }
 
-function SubRecipeForm({ onSave, subRecipe, allSubRecipes }: { onSave: (name: string) => void; subRecipe?: SubRecipe | null, allSubRecipes: SubRecipe[] }) {
+function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id'>) => void; subRecipe?: SubRecipe | null }) {
     const [name, setName] = useState(subRecipe?.name || "");
+    const [description, setDescription] = useState(subRecipe?.description || "");
+
+    const handleSave = () => {
+        if(name && description) {
+            onSave({ name, description });
+        }
+    }
 
     return (
         <div className="space-y-4">
@@ -85,7 +94,16 @@ function SubRecipeForm({ onSave, subRecipe, allSubRecipes }: { onSave: (name: st
                 <Label htmlFor="sub-recipe-name">Nombre de la Sub-receta</Label>
                 <Input id="sub-recipe-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Cortar vegetales"/>
             </div>
-            <Button onClick={() => onSave(name)}>Guardar Sub-receta</Button>
+            <div className="space-y-2">
+                <Label htmlFor="sub-recipe-description">Descripción de la Preparación</Label>
+                <Textarea id="sub-recipe-description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej: Cortar en juliana fina."/>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={handleSave}>Guardar Sub-receta</Button>
+            </DialogFooter>
         </div>
     )
 }
@@ -198,11 +216,11 @@ export default function MenuPage() {
         setSubRecipeModalOpen(true);
     }
 
-    const handleSaveSubRecipe = (name: string) => {
+    const handleSaveSubRecipe = (data: Omit<SubRecipe, 'id'>) => {
         if(editingSubRecipe) {
-            setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, name} : sr));
+            setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, ...data} : sr));
         } else {
-            const newSubRecipe: SubRecipe = { id: `sr${Date.now()}`, name };
+            const newSubRecipe: SubRecipe = { id: `sr${Date.now()}`, ...data };
             setSubRecipes([...subRecipes, newSubRecipe]);
         }
         setSubRecipeModalOpen(false);
@@ -305,7 +323,8 @@ export default function MenuPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre de Sub-Receta</TableHead>
+                  <TableHead className="w-[30%]">Nombre de Sub-Receta</TableHead>
+                  <TableHead>Descripción</TableHead>
                   <TableHead>Asignada a Platillo</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
                 </TableRow>
@@ -316,6 +335,7 @@ export default function MenuPage() {
                     return (
                         <TableRow key={sr.id}>
                             <TableCell className="font-medium">{sr.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{sr.description}</TableCell>
                             <TableCell>{assignedDish?.name || 'No asignada'}</TableCell>
                             <TableCell className="text-right">
                             <DropdownMenu>
@@ -353,8 +373,11 @@ export default function MenuPage() {
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>{editingSubRecipe ? 'Editar Sub-receta' : 'Nueva Sub-receta'}</DialogTitle>
+                 <DialogDescription>
+                    Añade los detalles para preparar esta sub-receta.
+                </DialogDescription>
             </DialogHeader>
-            <SubRecipeForm onSave={handleSaveSubRecipe} subRecipe={editingSubRecipe} allSubRecipes={subRecipes}/>
+            <SubRecipeForm onSave={handleSaveSubRecipe} subRecipe={editingSubRecipe} />
         </DialogContent>
     </Dialog>
     </>
