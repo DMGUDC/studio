@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText, PlusCircle, Trash } from "lucide-react";
+import { MoreHorizontal, FileText, PlusCircle, Trash, CheckCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -46,6 +46,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRestaurant } from '@/context/RestaurantContext';
 import type { Order, OrderItem, Dish, NewOrderData } from '@/lib/types';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
@@ -231,7 +233,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
 }
 
 export default function PedidosPage() {
-  const { orders, addOrder } = useRestaurant();
+  const { orders, addOrder, updateOrderStatus } = useRestaurant();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
   const [isNewOrderOpen, setNewOrderOpen] = useState(false);
@@ -244,6 +246,10 @@ export default function PedidosPage() {
   const handleSaveOrder = (newOrderData: NewOrderData) => {
     addOrder(newOrderData);
     setNewOrderOpen(false);
+  }
+
+  const handleMarkAsDelivered = (orderId: string) => {
+    updateOrderStatus(orderId, 'Entregado');
   }
 
   return (
@@ -304,7 +310,9 @@ export default function PedidosPage() {
                     {order.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{order.timestamp}</TableCell>
+                <TableCell>
+                    {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: es })}
+                </TableCell>
                 <TableCell className="text-right">
                   ${order.total.toFixed(2)}
                 </TableCell>
@@ -321,6 +329,12 @@ export default function PedidosPage() {
                         <FileText className="mr-2 h-4 w-4" />
                         Ver Detalles
                       </DropdownMenuItem>
+                       {order.status === 'Listo' && (
+                        <DropdownMenuItem onClick={() => handleMarkAsDelivered(order.id)}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Marcar como Entregado
+                        </DropdownMenuItem>
+                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

@@ -33,7 +33,6 @@ export type Cook = {
     waiter: string;
     status: "Pendiente" | "Preparando" | "Listo" | "Entregado" | "Cancelado";
     total: number;
-    timestamp: string;
     createdAt: number;
     items: OrderItem[];
     paymentMethod?: PaymentMethod;
@@ -87,4 +86,3 @@ export type Cook = {
     type: 'revenue' | 'expense';
     description: string;
   }
-

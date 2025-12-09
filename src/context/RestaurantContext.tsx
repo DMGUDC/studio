@@ -10,6 +10,7 @@ interface RestaurantContextType {
     setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
     addOrder: (newOrderData: NewOrderData) => void;
     settleOrder: (orderId: string, paymentMethod: PaymentMethod) => void;
+    updateOrderStatus: (orderId: string, status: Order['status']) => void;
     dishes: Dish[];
     setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
     inventoryItems: InventoryItem[];
@@ -53,12 +54,19 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             waiter: newOrderData.waiter,
             status: "Pendiente",
             total: newOrderData.total,
-            timestamp: "justo ahora",
             createdAt: Date.now(),
             items: orderItemsWithSubRecipes,
         };
         setOrders(prev => [newOrder, ...prev]);
     }
+
+    const updateOrderStatus = (orderId: string, status: Order['status']) => {
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId ? { ...order, status: status } : order
+          )
+        );
+      };
 
     const settleOrder = (orderId: string, paymentMethod: PaymentMethod) => {
         let settledOrder: Order | undefined;
@@ -87,6 +95,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         setOrders,
         addOrder,
         settleOrder,
+        updateOrderStatus,
         dishes,
         setDishes,
         inventoryItems,

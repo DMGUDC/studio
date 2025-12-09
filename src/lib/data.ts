@@ -65,7 +65,6 @@ export const initialOrders: Order[] = [
       status: "Entregado",
       paymentMethod: "Tarjeta",
       total: 42.5,
-      timestamp: "hace 5 minutos",
       createdAt: Date.now() - 5 * 60 * 1000,
       items: [
           { id: 'd1', name: 'Pizza Margherita', quantity: 1, price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"], subRecipes: [] },
@@ -79,7 +78,6 @@ export const initialOrders: Order[] = [
       waiter: "Ana",
       status: "Preparando",
       total: 89.9,
-      timestamp: "hace 12 minutos",
       createdAt: Date.now() - 12 * 60 * 1000,
       items: [
         {
@@ -114,7 +112,6 @@ export const initialOrders: Order[] = [
         waiter: "Carlos",
         status: "Listo",
         total: 28.0,
-        timestamp: "hace 20 minutos",
         createdAt: Date.now() - 20 * 60 * 1000,
         items: [
             {
@@ -138,7 +135,6 @@ export const initialOrders: Order[] = [
       waiter: "Sofia",
       status: "Pendiente",
       total: 30.0,
-      timestamp: "hace 22 minutos",
       createdAt: Date.now() - 22 * 60 * 1000,
       items: [
         {
@@ -172,7 +168,6 @@ export const initialOrders: Order[] = [
       status: "Entregado",
       paymentMethod: "Efectivo",
       total: 55.75,
-      timestamp: "hace 1 hora",
       createdAt: Date.now() - 60 * 60 * 1000,
       items: []
     },
@@ -182,7 +177,6 @@ export const initialOrders: Order[] = [
       waiter: "Carlos",
       status: "Cancelado",
       total: 25.0,
-      timestamp: "hace 2 horas",
       createdAt: Date.now() - 120 * 60 * 1000,
       items: []
     },

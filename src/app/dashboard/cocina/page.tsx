@@ -212,7 +212,7 @@ function OrderTicket({
 }
 
 export default function CocinaPage() {
-  const { orders, setOrders } = useRestaurant();
+  const { orders, setOrders, updateOrderStatus } = useRestaurant();
   const [selectedSubRecipe, setSelectedSubRecipe] = useState<SubRecipe | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
 
@@ -265,25 +265,23 @@ export default function CocinaPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setOrders((prevOrders) => {
-        return prevOrders
-          .map((order) => {
-            const allSubRecipesDone = order.items.every((item) =>
-              item.subRecipes.every((sr) => sr.status === "Listo")
-            );
-            if (allSubRecipesDone) {
-              return null; // This order will be filtered out
-            }
-            return order;
-          })
-          .filter((order): order is Order => order !== null);
+      orders.forEach((order) => {
+        if (order.status === 'Pendiente' || order.status === 'Preparando') {
+          const allSubRecipesDone = order.items.every((item) =>
+            item.subRecipes.every((sr) => sr.status === 'Listo')
+          );
+          if (allSubRecipesDone) {
+            updateOrderStatus(order.id, 'Listo');
+          }
+        }
       });
-    }, 2000); // Check every 2 seconds if an order is complete
+    }, 2000); // Check every 2 seconds if an order's sub-recipes are complete
 
     return () => clearInterval(interval);
-  }, [setOrders]);
+  }, [orders, updateOrderStatus]);
 
-  const activeOrders = orders.filter(order => order.status !== 'Entregado' && order.status !== 'Cancelado');
+
+  const activeOrders = orders.filter(order => order.status === 'Pendiente' || order.status === 'Preparando');
 
   return (
     <div className="h-full">
