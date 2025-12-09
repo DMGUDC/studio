@@ -26,6 +26,7 @@ interface RestaurantContextType {
     financials: FinancialRecord[];
     setFinancials: React.Dispatch<React.SetStateAction<FinancialRecord[]>>;
     setTableStatus: (tableName: string, status: 'ocupada' | 'disponible', orderId?: string, people?: number) => void;
+    isDishAvailable: (dishId: string) => boolean;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -222,6 +223,24 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const isDishAvailable = useCallback((dishId: string): boolean => {
+        const dish = dishes.find(d => d.id === dishId);
+        if (!dish) return false;
+    
+        for (const srId of dish.subRecipeIds) {
+          const subRecipe = subRecipes.find(sr => sr.id === srId);
+          if (!subRecipe) continue;
+    
+          for (const ingredient of subRecipe.ingredients) {
+            const invItem = inventoryItems.find(i => i.id === ingredient.inventoryId);
+            if (!invItem || invItem.stock < ingredient.quantity) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }, [dishes, subRecipes, inventoryItems]);
+
     const value = {
         orders,
         setOrders,
@@ -243,6 +262,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         financials,
         setFinancials,
         setTableStatus,
+        isDishAvailable,
     };
 
     return (

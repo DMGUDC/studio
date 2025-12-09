@@ -6,6 +6,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -51,6 +52,7 @@ export type Cook = {
       category: string;
       price: number;
       subRecipeIds: string[];
+      isPublic?: boolean;
   }
   
   export type Ingredient = {
@@ -113,3 +115,4 @@ export type Cook = {
     permissions: string[];
     avatarUrl?: string;
   }
+

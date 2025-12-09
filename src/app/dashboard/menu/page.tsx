@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label";
-import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, Clock, Package } from "lucide-react"
+import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, Clock, Package, AlertTriangle, ShieldCheck } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRestaurant } from "@/context/RestaurantContext";
 import type { Dish, Ingredient, SubRecipe } from '@/lib/types';
 
@@ -159,6 +161,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
     const [category, setCategory] = useState(dish?.category || "");
     const [price, setPrice] = useState(dish?.price || 0);
     const [selectedSubRecipeIds, setSelectedSubRecipeIds] = useState<string[]>(dish?.subRecipeIds || []);
+    const [isPublic, setIsPublic] = useState(dish?.isPublic || false);
 
     const suggestedCost = useMemo(() => {
         let totalCost = 0;
@@ -178,7 +181,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
     }, [selectedSubRecipeIds, allSubRecipes, inventoryItems]);
 
     const handleSave = () => {
-        onSave({ name, category, price, subRecipeIds: selectedSubRecipeIds });
+        onSave({ name, category, price, subRecipeIds: selectedSubRecipeIds, isPublic });
     }
 
     const handleSubRecipeToggle = (subRecipeId: string) => {
@@ -230,6 +233,10 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
                     </CardContent>
                 </Card>
             </div>
+            <div className="flex items-center space-x-2">
+                <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
+                <Label htmlFor="is-public">Publicar en el menú para clientes</Label>
+            </div>
             <DialogFooter>
                 <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
@@ -241,7 +248,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
 }
 
 export default function MenuPage() {
-    const { dishes, setDishes, subRecipes, setSubRecipes } = useRestaurant();
+    const { dishes, setDishes, subRecipes, setSubRecipes, isDishAvailable } = useRestaurant();
     
     const [isDishModalOpen, setDishModalOpen] = useState(false);
     const [isSubRecipeModalOpen, setSubRecipeModalOpen] = useState(false);
@@ -272,6 +279,10 @@ export default function MenuPage() {
 
     const handleDeleteDish = (dishId: string) => {
         setDishes(dishes.filter(d => d.id !== dishId));
+    }
+
+    const handleTogglePublic = (dishId: string) => {
+        setDishes(dishes.map(d => d.id === dishId ? { ...d, isPublic: !d.isPublic } : d));
     }
 
     const handleAddNewSubRecipe = () => {
@@ -310,6 +321,7 @@ export default function MenuPage() {
 
   return (
     <>
+    <TooltipProvider>
     <Tabs defaultValue="dishes">
       <div className="flex items-center justify-between">
         <TabsList>
@@ -342,32 +354,57 @@ export default function MenuPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
+                  <TableHead>Platillo</TableHead>
                   <TableHead>Categoría</TableHead>
-                  <TableHead>Sub-Recetas</TableHead>
+                  <TableHead>Disponibilidad</TableHead>
+                  <TableHead>Publicar</TableHead>
                   <TableHead className="text-right">Precio</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dishes.map((dish) => (
-                  <TableRow key={dish.id}>
-                    <TableCell className="font-medium">{dish.name}</TableCell>
-                    <TableCell><Badge variant="outline">{dish.category}</Badge></TableCell>
-                    <TableCell>{dish.subRecipeIds.length}</TableCell>
-                    <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                           <DropdownMenuItem onClick={() => handleEditDish(dish)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => handleDeleteDish(dish.id)} className="text-destructive focus:text-destructive"><Trash className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {dishes.map((dish) => {
+                    const available = isDishAvailable(dish.id);
+                    return (
+                        <TableRow key={dish.id}>
+                            <TableCell className="font-medium">{dish.name}</TableCell>
+                            <TableCell><Badge variant="outline">{dish.category}</Badge></TableCell>
+                            <TableCell>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        {available ? (
+                                            <ShieldCheck className="h-5 w-5 text-green-500" />
+                                        ) : (
+                                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                                        )}
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{available ? "Ingredientes disponibles" : "Faltan ingredientes"}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TableCell>
+                            <TableCell>
+                                <Switch
+                                    checked={dish.isPublic}
+                                    onCheckedChange={() => handleTogglePublic(dish.id)}
+                                    aria-label="Publicar en menú"
+                                    disabled={!available}
+                                />
+                            </TableCell>
+                            <TableCell className="text-right">${dish.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEditDish(dish)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteDish(dish.id)} className="text-destructive focus:text-destructive"><Trash className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -436,6 +473,7 @@ export default function MenuPage() {
         </Card>
       </TabsContent>
     </Tabs>
+    </TooltipProvider>
 
     <Dialog open={isDishModalOpen} onOpenChange={setDishModalOpen}>
         <DialogContent className="sm:max-w-2xl">
