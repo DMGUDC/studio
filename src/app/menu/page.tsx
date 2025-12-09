@@ -54,7 +54,7 @@ export default function PublicMenuPage() {
                             </CardHeader>
                             <CardContent className="flex-1 flex flex-col justify-between">
                                 <p className="text-muted-foreground mb-4">
-                                    {dish.subRecipeIds.length > 0 ? `Compuesto por ${dish.subRecipeIds.length} preparaciones.` : 'Directo de nuestra cocina.'}
+                                    {dish.description || 'Delicioso platillo preparado por nuestros chefs.'}
                                 </p>
                                 <p className="text-xl font-bold text-right text-primary">
                                     ${dish.price.toFixed(2)}

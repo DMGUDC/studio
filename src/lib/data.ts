@@ -7,6 +7,7 @@
 
 
 
+
 import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord, User } from './types';
 
 export const initialUsers: User[] = [
@@ -66,11 +67,11 @@ export const initialSubRecipes: Omit<SubRecipe, 'status' | 'assignedCook'>[] = [
   ]
   
 export const initialDishes: Dish[] = [
-    { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"], isPublic: true },
-    { id: "d2", name: "Ensalada César", category: "Ensaladas", price: 8.00, subRecipeIds: ["sr4", "sr5"], isPublic: true },
-    { id: "d3", name: "Pasta Carbonara", category: "Pastas", price: 14.00, subRecipeIds: ["sr6", "sr7", "sr8"], isPublic: false },
-    { id: "d4", name: "Hamburguesa XChef", category: "Hamburguesas", price: 11.50, subRecipeIds: ["sr10", "sr11"], isPublic: true },
-    { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, subRecipeIds: ["sr12"], isPublic: true },
+    { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, description: "Pizza clásica con salsa de tomate, mozzarella fresca y albahaca.", subRecipeIds: ["sr1", "sr2", "sr3"], isPublic: true },
+    { id: "d2", name: "Ensalada César", category: "Ensaladas", price: 8.00, description: "Lechuga romana fresca con nuestro aderezo César casero, crutones y queso parmesano.", subRecipeIds: ["sr4", "sr5"], isPublic: true },
+    { id: "d3", name: "Pasta Carbonara", category: "Pastas", price: 14.00, description: "Auténtica pasta Carbonara con panceta crujiente, yemas de huevo y queso Pecorino.", subRecipeIds: ["sr6", "sr7", "sr8"], isPublic: false },
+    { id: "d4", name: "Hamburguesa XChef", category: "Hamburguesas", price: 11.50, description: "Nuestra hamburguesa de la casa con carne de res premium, lechuga, tomate y salsa especial.", subRecipeIds: ["sr10", "sr11"], isPublic: true },
+    { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, description: "Papas fritas crujientes y doradas, el acompañamiento perfecto.", subRecipeIds: ["sr12"], isPublic: true },
   ]
   
 const subRecipesForOrders = initialSubRecipes.map(sr => ({...sr, status: 'Pendiente' as const, assignedCook: undefined}));

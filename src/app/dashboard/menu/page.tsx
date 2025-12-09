@@ -159,6 +159,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
     const { inventoryItems } = useRestaurant();
     const [name, setName] = useState(dish?.name || "");
     const [category, setCategory] = useState(dish?.category || "");
+    const [description, setDescription] = useState(dish?.description || "");
     const [price, setPrice] = useState(dish?.price || 0);
     const [selectedSubRecipeIds, setSelectedSubRecipeIds] = useState<string[]>(dish?.subRecipeIds || []);
     const [isPublic, setIsPublic] = useState(dish?.isPublic || false);
@@ -181,7 +182,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
     }, [selectedSubRecipeIds, allSubRecipes, inventoryItems]);
 
     const handleSave = () => {
-        onSave({ name, category, price, subRecipeIds: selectedSubRecipeIds, isPublic });
+        onSave({ name, category, price, description, subRecipeIds: selectedSubRecipeIds, isPublic });
     }
 
     const handleSubRecipeToggle = (subRecipeId: string) => {
@@ -201,6 +202,10 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
                     <Label htmlFor="dish-category">Categoría</Label>
                     <Input id="dish-category" value={category} onChange={e => setCategory(e.target.value)} placeholder="Ej: Pizzas"/>
                 </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="dish-description">Descripción del Platillo</Label>
+                <Textarea id="dish-description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej: Pizza clásica con salsa de tomate, mozzarella fresca y albahaca."/>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

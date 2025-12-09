@@ -7,6 +7,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -51,6 +52,7 @@ export type Cook = {
       name: string;
       category: string;
       price: number;
+      description?: string;
       subRecipeIds: string[];
       isPublic?: boolean;
   }
@@ -115,4 +117,3 @@ export type Cook = {
     permissions: string[];
     avatarUrl?: string;
   }
-
