@@ -27,7 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Edit, Trash, LayoutDashboard, Table as TableIcon, ClipboardList, ChefHat, Menu, Boxes, LineChart, Users } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Edit, Trash, LayoutDashboard, Table as TableIcon, ClipboardList, ChefHat, Menu, Boxes, LineChart, Users, CreditCard } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -58,6 +58,7 @@ const allPermissions = [
     { id: "/dashboard/menu", label: "Menú", icon: Menu },
     { id: "/dashboard/inventario", label: "Inventario", icon: Boxes },
     { id: "/dashboard/finanzas", label: "Finanzas", icon: LineChart },
+    { id: "/dashboard/facturacion", label: "Facturación", icon: CreditCard },
     { id: "/dashboard/usuarios", label: "Usuarios", icon: Users },
 ];
 

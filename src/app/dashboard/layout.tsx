@@ -62,7 +62,7 @@ export default function DashboardLayout({
 
   const userPermissions = user?.permissions || [];
 
-  const navItems = allNavItems.filter(item => userPermissions.includes(item.href) || item.href === '/dashboard/facturacion');
+  const navItems = allNavItems.filter(item => userPermissions.includes(item.href));
   const filteredBottomNavItems = bottomNavItems;
 
 
