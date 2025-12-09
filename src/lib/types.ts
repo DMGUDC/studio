@@ -3,6 +3,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -39,6 +40,7 @@ export type Cook = {
     createdAt: number;
     items: OrderItem[];
     paymentMethod?: PaymentMethod;
+    people?: number;
   };
   
   export type Dish = {
@@ -66,8 +68,14 @@ export type Cook = {
   }
 
   export type Table = {
-    id: number;
+    id: number | string;
     name: string;
+    status: 'disponible' | 'ocupada';
+    x: number;
+    y: number;
+    shape: 'square' | 'round';
+    people?: number;
+    orderId?: string;
   }
 
   export type Waiter = {
@@ -80,6 +88,7 @@ export type Cook = {
     waiter: string;
     items: OrderItem[];
     total: number;
+    people: number;
   };
   
   export type EditedOrderData = NewOrderData & { id: string };

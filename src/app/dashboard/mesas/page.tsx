@@ -29,35 +29,34 @@ import {
   } from '@/components/ui/dialog';
 import { Table as UiTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRestaurant } from "@/context/RestaurantContext";
-import type { Order, PaymentMethod } from "@/lib/types";
+import type { Order, PaymentMethod, Table } from "@/lib/types";
 
 const initialFloors = {
   piso1: {
     name: "Piso Principal",
     tables: [
-      { id: 1, name: "Mesa 1", status: "disponible" as const, x: 10, y: 10, shape: "square" },
-      { id: 2, name: "Mesa 2", status: "ocupada" as const, x: 35, y: 10, people: 4, shape: "square", orderId: "ORD002" },
-      { id: 3, name: "Mesa 3", status: "disponible" as const, x: 60, y: 10, shape: "square" },
-      { id: 4, name: "Mesa 4", status: "disponible" as const, x: 10, y: 40, shape: "round" },
-      { id: 5, name: "Mesa 5", status: "ocupada" as const, x: 35, y: 40, people: 2, shape: "round", orderId: "ORD001" },
-      { id: 6, name: "Barra 1", status: "ocupada" as const, x: 85, y: 10, people: 1, shape: "square", orderId: "ORD006" },
-      { id: 7, name: "Barra 2", status: "disponible" as const, x: 85, y: 30, shape: "square" },
-      { id: 8, name: "Mesa 8", status: "ocupada" as const, x: 10, y: 70, shape: "square", orderId: "ORD004" },
+      { id: 1, name: "Mesa 1", status: "disponible" as const, x: 10, y: 10, shape: "square" as const },
+      { id: 2, name: "Mesa 2", status: "ocupada" as const, x: 35, y: 10, people: 4, shape: "square" as const, orderId: "ORD002" },
+      { id: 3, name: "Mesa 3", status: "disponible" as const, x: 60, y: 10, shape: "square" as const },
+      { id: 4, name: "Mesa 4", status: "disponible" as const, x: 10, y: 40, shape: "round" as const },
+      { id: 5, name: "Mesa 5", status: "ocupada" as const, x: 35, y: 40, people: 2, shape: "round" as const, orderId: "ORD001" },
+      { id: 6, name: "Barra 1", status: "ocupada" as const, x: 85, y: 10, people: 1, shape: "square" as const, orderId: "ORD006" },
+      { id: 7, name: "Barra 2", status: "disponible" as const, x: 85, y: 30, shape: "square" as const },
+      { id: 8, name: "Mesa 8", status: "ocupada" as const, x: 10, y: 70, shape: "square" as const, orderId: "ORD004" },
     ],
   },
   terraza: {
     name: "Terraza",
     tables: [
-      { id: 9, name: "Terraza 1", status: "ocupada" as const, x: 15, y: 20, people: 3, shape: "square", orderId: "ORD003" },
-      { id: 10, name: "Terraza 2", status: "disponible" as const, x: 45, y: 20, shape: "square" },
-      { id: 11, name: "Terraza 3", status: "disponible" as const, x: 75, y: 20, shape: "round" },
-      { id: 12, name: "Terraza 4", status: "disponible" as const, x: 15, y: 60, shape: "round" },
+      { id: 9, name: "Terraza 1", status: "ocupada" as const, x: 15, y: 20, people: 3, shape: "square" as const, orderId: "ORD003" },
+      { id: 10, name: "Terraza 2", status: "disponible" as const, x: 45, y: 20, shape: "square" as const },
+      { id: 11, name: "Terraza 3", status: "disponible" as const, x: 75, y: 20, shape: "round" as const },
+      { id: 12, name: "Terraza 4", status: "disponible" as const, x: 15, y: 60, shape: "round" as const },
     ],
   },
 };
 
-type Table = typeof initialFloors.piso1.tables[0];
-type Floors = typeof initialFloors;
+type Floors = Record<string, { name: string; tables: Table[] }>;
 type FloorKey = keyof Floors;
 
 const statusStyles = {
@@ -72,49 +71,12 @@ const shapeStyles = {
 
 function TableDetailsDialog({ table, order, open, onOpenChange, onSettle }: { table: Table | null, order: Order | null, open: boolean, onOpenChange: (open: boolean) => void, onSettle: (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => void }) {
     const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-    const { inventoryItems, dishes } = useRestaurant();
+    const { calculatePartialCost } = useRestaurant();
     
     const { adjustedTotal, isPartial } = useMemo(() => {
         if (!order) return { adjustedTotal: 0, isPartial: false };
-
-        const allSubrecipesDone = order.items.every(item => item.subRecipes.every(sr => sr.status === 'Listo'));
-        if (allSubrecipesDone) {
-            return { adjustedTotal: order.total, isPartial: false };
-        }
-
-        let partialCost = 0;
-        order.items.forEach(item => {
-            const dish = dishes.find(d => d.id === item.id);
-            if (!dish) return;
-
-            const completedSubRecipes = item.subRecipes.filter(sr => sr.status === 'Listo');
-            if (completedSubRecipes.length === 0 && item.subRecipes.length > 0) return;
-            if (item.subRecipes.length === 0) { // Item has no subrecipes (e.g. a drink)
-                partialCost += item.price * item.quantity;
-                return;
-            }
-            if(completedSubRecipes.length === item.subRecipes.length) { // All sub-recipes for this item are done
-                partialCost += item.price * item.quantity;
-                return;
-            }
-
-            // Calculate cost of ingredients for completed sub-recipes only
-            let ingredientCost = 0;
-            completedSubRecipes.forEach(sr => {
-                sr.ingredients.forEach(ing => {
-                    const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
-                    if (invItem) {
-                        const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
-                        ingredientCost += rawQuantity * invItem.price;
-                    }
-                });
-            });
-            // We'll charge 3x the ingredient cost for partially completed items as a simple heuristic
-            partialCost += ingredientCost * 3 * item.quantity; 
-        });
-
-        return { adjustedTotal: partialCost, isPartial: true };
-    }, [order, dishes, inventoryItems]);
+        return calculatePartialCost(order);
+    }, [order, calculatePartialCost]);
 
 
     if (!table || !order) return null;
@@ -180,13 +142,22 @@ export default function MesasPage() {
   const [floors, setFloors] = useState<Floors>(initialFloors);
   const [selectedFloor, setSelectedFloor] = useState<FloorKey>("piso1");
   const [isEditing, setIsEditing] = useState(false);
-  const dragInfo = useRef<{ tableId: number; offsetX: number; offsetY: number } | null>(null);
+  const dragInfo = useRef<{ tableId: number | string; offsetX: number; offsetY: number } | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
   const [originalFloors, setOriginalFloors] = useState<Floors>(JSON.parse(JSON.stringify(initialFloors)));
 
-  const { orders, settleOrder } = useRestaurant();
+  const { orders, settleOrder, tables: contextTables } = useRestaurant();
   const [isDetailsOpen, setDetailsOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+
+  const currentFloorTables = useMemo(() => {
+    // This merges the static layout from `initialFloors` with the dynamic status from context
+    const layout = floors[selectedFloor]?.tables || [];
+    return layout.map(layoutTable => {
+        const contextTable = contextTables.find(ct => ct.name === layoutTable.name);
+        return contextTable ? { ...layoutTable, status: contextTable.status, orderId: contextTable.orderId, people: contextTable.people } : layoutTable;
+    });
+  }, [selectedFloor, contextTables, floors]);
 
   const handleEditToggle = () => {
     if(!isEditing) {
@@ -203,6 +174,7 @@ export default function MesasPage() {
   const handleSave = () => {
     setIsEditing(false);
     // Here you could persist the new layout
+    // For now, we just update the local state which is lost on reload.
     console.log("Layout guardado:", floors);
   };
 
@@ -216,21 +188,6 @@ export default function MesasPage() {
 
   const handleSettleTable = (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => {
     settleOrder(orderId, paymentMethod, finalAmount);
-    // Update table status in the local state of this component
-    setFloors(prevFloors => {
-        const newFloors = JSON.parse(JSON.stringify(prevFloors));
-        for (const floorKey in newFloors) {
-            const tables = newFloors[floorKey].tables.map((table: Table) => {
-                if (table.orderId === orderId) {
-                    const { orderId: oid, people, ...rest } = table;
-                    return { ...rest, status: 'disponible' as const };
-                }
-                return table;
-            });
-            newFloors[floorKey].tables = tables;
-        }
-        return newFloors;
-    });
   }
 
 
@@ -299,7 +256,6 @@ export default function MesasPage() {
       }))
   }
 
-  const currentFloor = floors[selectedFloor];
   const selectedOrder = orders.find(o => o.id === selectedTable?.orderId);
 
   return (
@@ -367,7 +323,7 @@ export default function MesasPage() {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
             >
-                {currentFloor.tables.map((table) => (
+                {currentFloorTables.map((table) => (
                 <div
                     key={table.id}
                     draggable={isEditing}
@@ -376,8 +332,8 @@ export default function MesasPage() {
                     className={cn(
                     "absolute flex flex-col items-center justify-center border-2 shadow-sm transition-transform",
                      isEditing ? "cursor-move hover:scale-105" : "cursor-pointer",
-                    shapeStyles[table.shape as keyof typeof shapeStyles] || shapeStyles.square,
-                    statusStyles[table.status as keyof typeof statusStyles],
+                    shapeStyles[table.shape],
+                    statusStyles[table.status],
                     table.status === 'ocupada' && 'bg-primary text-primary-foreground'
                     )}
                     style={{ left: `${table.x}%`, top: `${table.y}%` }}

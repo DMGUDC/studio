@@ -2,6 +2,7 @@
 
 
 
+
 import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord, User } from './types';
 
 export const initialUsers: User[] = [
@@ -79,6 +80,7 @@ export const initialOrders: Order[] = [
       paymentMethod: "Tarjeta",
       total: 42.5,
       createdAt: Date.now() - 5 * 60 * 1000,
+      people: 2,
       items: [
           { id: 'd1', name: 'Pizza Margherita', quantity: 1, price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"], subRecipes: [] },
           { id: 'd6', name: 'Refresco', quantity: 2, price: 2.50, subRecipeIds: [], subRecipes: [] },
@@ -92,6 +94,7 @@ export const initialOrders: Order[] = [
       status: "Preparando",
       total: 89.9,
       createdAt: Date.now() - 12 * 60 * 1000,
+      people: 4,
       items: [
         {
           name: "Pizza Margherita",
@@ -126,6 +129,7 @@ export const initialOrders: Order[] = [
         status: "Listo",
         total: 28.0,
         createdAt: Date.now() - 20 * 60 * 1000,
+        people: 3,
         items: [
             {
                 name: "Pasta Carbonara",
@@ -149,6 +153,7 @@ export const initialOrders: Order[] = [
       status: "Pendiente",
       total: 30.0,
       createdAt: Date.now() - 22 * 60 * 1000,
+      people: 2,
       items: [
         {
             name: "Hamburguesa XChef",
@@ -182,6 +187,7 @@ export const initialOrders: Order[] = [
       paymentMethod: "Efectivo",
       total: 55.75,
       createdAt: Date.now() - 60 * 60 * 1000,
+      people: 2,
       items: []
     },
     {
@@ -191,15 +197,24 @@ export const initialOrders: Order[] = [
       status: "Cancelado",
       total: 25.0,
       createdAt: Date.now() - 120 * 60 * 1000,
+      people: 1,
       items: []
     },
   ];
 
 export const initialTables: Table[] = [
-    { id: 1, name: "Mesa 1"}, { id: 2, name: "Mesa 2"}, { id: 3, name: "Mesa 3"},
-    { id: 4, name: "Mesa 4"}, { id: 5, name: "Mesa 5"}, { id: 6, name: "Barra 1"},
-    { id: 7, name: "Barra 2"}, { id: 8, name: "Mesa 8"}, { id: 9, name: "Terraza 1"},
-    { id: 10, name: "Terraza 2"}, { id: 11, name: "Terraza 3"}, { id: 12, name: "Terraza 4"},
+    { id: 1, name: "Mesa 1", status: 'disponible', shape: 'square', x:0, y:0 },
+    { id: 2, name: "Mesa 2", status: 'ocupada', shape: 'square', x:0, y:0, orderId: "ORD002", people: 4 }, 
+    { id: 3, name: "Mesa 3", status: 'disponible', shape: 'square', x:0, y:0 },
+    { id: 4, name: "Mesa 4", status: 'disponible', shape: 'round', x:0, y:0 }, 
+    { id: 5, name: "Mesa 5", status: 'ocupada', shape: 'round', x:0, y:0, orderId: "ORD001", people: 2 }, 
+    { id: 6, name: "Barra 1", status: 'ocupada', shape: 'square', x:0, y:0, orderId: "ORD006", people: 1 },
+    { id: 7, name: "Barra 2", status: 'disponible', shape: 'square', x:0, y:0 }, 
+    { id: 8, name: "Mesa 8", status: 'ocupada', shape: 'square', x:0, y:0, orderId: "ORD004", people: 2 }, 
+    { id: 9, name: "Terraza 1", status: 'ocupada', shape: 'square', x:0, y:0, orderId: "ORD003", people: 3 },
+    { id: 10, name: "Terraza 2", status: 'disponible', shape: 'square', x:0, y:0 }, 
+    { id: 11, name: "Terraza 3", status: 'disponible', shape: 'round', x:0, y:0 }, 
+    { id: 12, name: "Terraza 4", status: 'disponible', shape: 'round', x:0, y:0 },
 ];
 
 export const initialWaiters: Waiter[] = [

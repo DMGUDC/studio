@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import type { Order, OrderItem, SubRecipe, Dish, InventoryItem, Cook, Table, Waiter, NewOrderData, EditedOrderData, FinancialRecord, PaymentMethod } from '@/lib/types';
 import { initialOrders, initialDishes, initialInventoryItems, initialSubRecipes, initialCooks, initialTables, initialWaiters, initialFinancials } from '@/lib/data';
 
@@ -11,7 +11,8 @@ interface RestaurantContextType {
     addOrder: (newOrderData: NewOrderData) => void;
     updateOrder: (editedOrderData: EditedOrderData) => void;
     settleOrder: (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => void;
-    updateOrderStatus: (orderId: string, status: Order['status']) => void;
+    updateOrderStatus: (orderId: string, status: Order['status'], finalAmount?: number) => void;
+    calculatePartialCost: (order: Order) => { adjustedTotal: number, isPartial: boolean };
     dishes: Dish[];
     setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
     inventoryItems: InventoryItem[];
@@ -24,6 +25,7 @@ interface RestaurantContextType {
     waiters: Waiter[];
     financials: FinancialRecord[];
     setFinancials: React.Dispatch<React.SetStateAction<FinancialRecord[]>>;
+    setTableStatus: (tableName: string, status: 'ocupada' | 'disponible', orderId?: string, people?: number) => void;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(initialInventoryItems);
     const [subRecipes, setSubRecipes] = useState<SubRecipe[]>(initialSubRecipes);
     const [financials, setFinancials] = useState<FinancialRecord[]>(initialFinancials);
+    const [tables, setTables] = useState<Table[]>(initialTables);
 
     const getItemsWithSubrecipes = (items: OrderItem[]) => {
         return items.map(item => {
@@ -51,6 +54,16 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         });
     }
 
+    const setTableStatus = useCallback((tableName: string, status: 'ocupada' | 'disponible', orderId?: string, people?: number) => {
+        setTables(prevTables =>
+          prevTables.map(t =>
+            t.name === tableName
+              ? { ...t, status, orderId, people: status === 'ocupada' ? people : undefined }
+              : t
+          )
+        );
+      }, []);
+
     const addOrder = (newOrderData: NewOrderData) => {
         const orderItemsWithSubRecipes = getItemsWithSubrecipes(newOrderData.items);
 
@@ -62,8 +75,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             total: newOrderData.total,
             createdAt: Date.now(),
             items: orderItemsWithSubRecipes,
+            people: newOrderData.people,
         };
         setOrders(prev => [newOrder, ...prev]);
+        setTableStatus(newOrder.table, 'ocupada', newOrder.id, newOrder.people);
     }
 
     const updateOrder = (editedOrderData: EditedOrderData) => {
@@ -79,30 +94,83 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
                     return getItemsWithSubrecipes([newItem])[0];
                 });
 
-                return {
+                const updatedOrder = {
                     ...order,
                     ...editedOrderData,
                     items: updatedItems,
-                    status: 'Pendiente', // Reset status on edit
+                    status: 'Pendiente' as const, // Reset status on edit
+                    people: editedOrderData.people,
                 };
+                setTableStatus(updatedOrder.table, 'ocupada', updatedOrder.id, updatedOrder.people);
+                return updatedOrder;
             }
             return order;
         }));
     }
 
-    const updateOrderStatus = (orderId: string, status: Order['status']) => {
+    const calculatePartialCost = useCallback((order: Order): { adjustedTotal: number, isPartial: boolean } => {
+        const allSubrecipesDone = order.items.every(item => item.subRecipes.every(sr => sr.status === 'Listo'));
+        if (allSubrecipesDone) {
+            return { adjustedTotal: order.total, isPartial: false };
+        }
+
+        let partialCost = 0;
+        order.items.forEach(item => {
+            const completedSubRecipes = item.subRecipes.filter(sr => sr.status === 'Listo');
+            if (item.subRecipes.length > 0 && completedSubRecipes.length === 0) return;
+
+            if (item.subRecipes.length === 0 || completedSubRecipes.length === item.subRecipes.length) {
+                partialCost += item.price * item.quantity;
+                return;
+            }
+
+            let ingredientCost = 0;
+            completedSubRecipes.forEach(sr => {
+                sr.ingredients.forEach(ing => {
+                    const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
+                    if (invItem) {
+                        const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
+                        ingredientCost += rawQuantity * invItem.price;
+                    }
+                });
+            });
+            partialCost += (ingredientCost * 3) * item.quantity;
+        });
+
+        return { adjustedTotal: partialCost, isPartial: partialCost > 0 && partialCost < order.total };
+    }, [inventoryItems, dishes]);
+
+
+    const updateOrderStatus = (orderId: string, status: Order['status'], finalAmount?: number) => {
+        let orderToUpdate: Order | undefined;
         setOrders(prevOrders =>
-          prevOrders.map(order =>
-            order.id === orderId ? { ...order, status: status } : order
-          )
+          prevOrders.map(order => {
+              if(order.id === orderId) {
+                  orderToUpdate = order;
+                  return { ...order, status };
+              }
+              return order;
+          })
         );
-      };
+
+        if (orderToUpdate && finalAmount !== undefined && finalAmount > 0) {
+            const newFinancialRecord: FinancialRecord = {
+                id: `fin-rev-${Date.now()}`,
+                date: new Date(),
+                amount: finalAmount,
+                type: 'revenue',
+                description: `Pedido ${orderId} (${status})`
+            };
+            setFinancials(prev => [...prev, newFinancialRecord]);
+        }
+    };
 
     const settleOrder = (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => {
         let settledOrder: Order | undefined;
         setOrders(prevOrders => prevOrders.map(order => {
             if (order.id === orderId) {
                 settledOrder = { ...order, status: 'Entregado', paymentMethod, total: finalAmount };
+                setTableStatus(settledOrder.table, 'disponible');
                 return settledOrder;
             }
             return order;
@@ -150,6 +218,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         updateOrder,
         settleOrder,
         updateOrderStatus,
+        calculatePartialCost,
         dishes,
         setDishes,
         inventoryItems,
@@ -158,10 +227,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         subRecipes,
         setSubRecipes,
         cooks: initialCooks,
-        tables: initialTables,
+        tables,
         waiters: initialWaiters,
         financials,
         setFinancials,
+        setTableStatus,
     };
 
     return (

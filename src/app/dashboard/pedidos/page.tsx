@@ -112,18 +112,21 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
     const [waiter, setWaiter] = useState('');
     const [items, setItems] = useState<OrderItem[]>([]);
     const [selectedDish, setSelectedDish] = useState('');
+    const [people, setPeople] = useState(1);
 
     useEffect(() => {
         if(orderToEdit) {
             setTable(orderToEdit.table);
             setWaiter(orderToEdit.waiter);
             setItems(orderToEdit.items);
+            setPeople(orderToEdit.people || 1);
         } else {
             // Reset form when dialog is opened for a new order
             setTable('');
             setWaiter('');
             setItems([]);
             setSelectedDish('');
+            setPeople(1);
         }
     }, [orderToEdit, open]);
 
@@ -151,7 +154,7 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
 
     const handleSave = () => {
         if (table && waiter && items.length > 0) {
-            const orderData = { table, waiter, items, total };
+            const orderData = { table, waiter, items, total, people };
             if (orderToEdit) {
                 onUpdate({ ...orderData, id: orderToEdit.id });
             } else {
@@ -187,6 +190,12 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
                                     {waiters.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Personas en la mesa</Label>
+                            <Input type="number" value={people} onChange={e => setPeople(Number(e.target.value) || 1)} min="1"/>
                         </div>
                     </div>
                     <div className="space-y-2">
@@ -250,7 +259,7 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
 }
 
 export default function PedidosPage() {
-  const { orders, addOrder, updateOrder, updateOrderStatus } = useRestaurant();
+  const { orders, addOrder, updateOrder, updateOrderStatus, calculatePartialCost } = useRestaurant();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
@@ -285,9 +294,17 @@ export default function PedidosPage() {
     updateOrderStatus(orderId, 'Entregado');
   }
 
-  const handleCancelOrder = (orderId: string) => {
-    // Maybe add a confirmation dialog here in a real app
-    updateOrderStatus(orderId, 'Cancelado');
+  const handleCancelOrder = (order: Order) => {
+    const { adjustedTotal } = calculatePartialCost(order);
+    
+    if (adjustedTotal > 0) {
+        // If there's a partial cost, we "settle" the order with that amount
+        // but mark it as canceled. We use 'Otro' as payment method for tracking.
+        updateOrderStatus(order.id, 'Cancelado', adjustedTotal);
+    } else {
+        // If no work was done, just cancel it without financial implications
+        updateOrderStatus(order.id, 'Cancelado');
+    }
   }
 
   return (
@@ -382,7 +399,7 @@ export default function PedidosPage() {
                         </DropdownMenuItem>
                        )}
                        {canModify && (
-                          <DropdownMenuItem onClick={() => handleCancelOrder(order.id)} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={() => handleCancelOrder(order)} className="text-destructive focus:text-destructive">
                               <XCircle className="mr-2 h-4 w-4" />
                               Cancelar
                           </DropdownMenuItem>
