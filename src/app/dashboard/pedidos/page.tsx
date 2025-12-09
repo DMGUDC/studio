@@ -44,98 +44,9 @@ import {
   } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useRestaurant } from '@/context/RestaurantContext';
+import type { Order, OrderItem, Dish, NewOrderData } from '@/lib/types';
 
-const initialOrders = [
-  {
-    id: "ORD001",
-    table: "Mesa 5",
-    waiter: "Carlos",
-    status: "Entregado",
-    total: 42.5,
-    timestamp: "hace 5 minutos",
-    items: [
-        { id: 'd1', name: 'Pizza Margherita', quantity: 1, price: 12.50 },
-        { id: 'item2', name: 'Refresco', quantity: 2, price: 2.50 },
-        { id: 'item3', name: 'Tiramisú', quantity: 1, price: 7.50 },
-    ]
-  },
-  {
-    id: "ORD002",
-    table: "Mesa 2",
-    waiter: "Ana",
-    status: "Preparando",
-    total: 89.9,
-    timestamp: "hace 12 minutos",
-    items: []
-  },
-  {
-    id: "ORD003",
-    table: "Terraza 1",
-    waiter: "Carlos",
-    status: "Listo",
-    total: 12.0,
-    timestamp: "hace 20 minutos",
-    items: []
-  },
-  {
-    id: "ORD004",
-    table: "Mesa 8",
-    waiter: "Sofia",
-    status: "Pendiente",
-    total: 30.0,
-    timestamp: "hace 22 minutos",
-    items: []
-  },
-  {
-    id: "ORD005",
-    table: "Mesa 3",
-    waiter: "Ana",
-    status: "Entregado",
-    total: 55.75,
-    timestamp: "hace 1 hora",
-    items: []
-  },
-  {
-    id: "ORD006",
-    table: "Mesa 5",
-    waiter: "Carlos",
-    status: "Cancelado",
-    total: 25.0,
-    timestamp: "hace 2 horas",
-    items: []
-  },
-];
-
-const initialDishes = [
-    { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"] },
-    { id: "d2", name: "Ensalada César", category: "Ensaladas", price: 8.00, subRecipeIds: ["sr4", "sr5"] },
-    { id: "d3", name: "Pasta Carbonara", category: "Pastas", price: 14.00, subRecipeIds: ["sr6", "sr7", "sr8"] },
-    { id: "d4", name: "Hamburguesa XChef", category: "Hamburguesas", price: 11.50, subRecipeIds: ["sr10", "sr11"] },
-    { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, subRecipeIds: ["sr12"] },
-];
-
-const initialTables = [
-    { id: 1, name: "Mesa 1"}, { id: 2, name: "Mesa 2"}, { id: 3, name: "Mesa 3"},
-    { id: 4, name: "Mesa 4"}, { id: 5, name: "Mesa 5"}, { id: 6, name: "Barra 1"},
-    { id: 7, name: "Barra 2"}, { id: 8, name: "Mesa 8"}, { id: 9, name: "Terraza 1"},
-    { id: 10, name: "Terraza 2"}, { id: 11, name: "Terraza 3"}, { id: 12, name: "Terraza 4"},
-];
-
-const initialWaiters = [
-    { id: 'usr02', name: "Carlos" },
-    { id: 'usr03', name: "Ana" },
-    { id: 'usr04', name: "Sofia" },
-];
-
-
-type OrderItem = {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-};
-type Order = (typeof initialOrders)[0];
-type Dish = (typeof initialDishes)[0];
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   Entregado: "outline",
@@ -192,7 +103,8 @@ function OrderDetailsDialog({ order, open, onOpenChange }: { order: Order | null
     )
 }
 
-function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void }) {
+function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: NewOrderData) => void }) {
+    const { tables, waiters, dishes } = useRestaurant();
     const [table, setTable] = useState('');
     const [waiter, setWaiter] = useState('');
     const [items, setItems] = useState<OrderItem[]>([]);
@@ -200,14 +112,14 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
 
     const addItem = () => {
         if (!selectedDish) return;
-        const dishToAdd = initialDishes.find(d => d.id === selectedDish);
+        const dishToAdd = dishes.find(d => d.id === selectedDish);
         if (!dishToAdd) return;
         
         const existingItem = items.find(item => item.id === dishToAdd.id);
         if (existingItem) {
             setItems(items.map(item => item.id === dishToAdd.id ? { ...item, quantity: item.quantity + 1 } : item));
         } else {
-            setItems([...items, { id: dishToAdd.id, name: dishToAdd.name, price: dishToAdd.price, quantity: 1 }]);
+            setItems([...items, { id: dishToAdd.id, name: dishToAdd.name, price: dishToAdd.price, quantity: 1, subRecipeIds: dishToAdd.subRecipeIds, subRecipes: [] }]);
         }
     };
 
@@ -222,6 +134,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
     const handleSave = () => {
         if (table && waiter && items.length > 0) {
             onSave({ table, waiter, items, total });
+            // Reset form
             setTable('');
             setWaiter('');
             setItems([]);
@@ -243,7 +156,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
                             <Select value={table} onValueChange={setTable}>
                                 <SelectTrigger><SelectValue placeholder="Seleccionar mesa..." /></SelectTrigger>
                                 <SelectContent>
-                                    {initialTables.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                                    {tables.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -252,7 +165,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
                             <Select value={waiter} onValueChange={setWaiter}>
                                 <SelectTrigger><SelectValue placeholder="Seleccionar mesero..." /></SelectTrigger>
                                 <SelectContent>
-                                    {initialWaiters.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
+                                    {waiters.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -263,7 +176,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
                             <Select value={selectedDish} onValueChange={setSelectedDish}>
                                 <SelectTrigger><SelectValue placeholder="Seleccionar platillo..." /></SelectTrigger>
                                 <SelectContent>
-                                    {initialDishes.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - ${d.price.toFixed(2)}</SelectItem>)}
+                                    {dishes.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - ${d.price.toFixed(2)}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                             <Button onClick={addItem}><PlusCircle className="mr-2 h-4 w-4"/>Añadir</Button>
@@ -318,7 +231,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
 }
 
 export default function PedidosPage() {
-  const [orders, setOrders] = useState(initialOrders);
+  const { orders, addOrder } = useRestaurant();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
   const [isNewOrderOpen, setNewOrderOpen] = useState(false);
@@ -328,14 +241,8 @@ export default function PedidosPage() {
     setDetailsOpen(true);
   }
 
-  const handleSaveOrder = (newOrderData: Omit<Order, 'id' | 'status' | 'timestamp'>) => {
-    const newOrder: Order = {
-        ...newOrderData,
-        id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
-        status: "Pendiente",
-        timestamp: "justo ahora",
-    };
-    setOrders(prev => [newOrder, ...prev]);
+  const handleSaveOrder = (newOrderData: NewOrderData) => {
+    addOrder(newOrderData);
     setNewOrderOpen(false);
   }
 

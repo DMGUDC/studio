@@ -26,108 +26,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useRestaurant } from "@/context/RestaurantContext";
+import type { Order, SubRecipe } from "@/lib/types";
 
-type Cook = {
-  id: string;
-  name: string;
-};
-
-type SubRecipe = {
-  id: string;
-  name: string;
-  description: string;
-  status: "Pendiente" | "Preparando" | "Listo";
-  assignedCook?: string; // Cook ID
-  prepTime: number; // Estimated preparation time in minutes
-};
-
-type OrderItem = {
-  name: string;
-  quantity: number;
-  notes?: string;
-  subRecipes: SubRecipe[];
-};
-
-type Order = {
-  id: string;
-  table: string;
-  items: OrderItem[];
-  createdAt: number;
-};
-
-const cooks: Cook[] = [
-  { id: "cook1", name: "Juan" },
-  { id: "cook2", name: "Maria" },
-  { id: "cook3", name: "Pedro" },
-];
-
-const initialOrders: Order[] = [
-  {
-    id: "ORD002",
-    table: "Mesa 2",
-    items: [
-      {
-        name: "Pizza Margherita",
-        quantity: 1,
-        subRecipes: [
-          { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", status: "Listo", prepTime: 10 },
-          { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", status: "Preparando", assignedCook: "cook1", prepTime: 5 },
-          { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", status: "Pendiente", prepTime: 15 },
-        ],
-      },
-      {
-        name: "Ensalada César",
-        quantity: 1,
-        notes: "Sin crutones",
-        subRecipes: [
-          { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", status: "Preparando", assignedCook: "cook2", prepTime: 5 },
-          { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", status: "Pendiente", prepTime: 7 },
-        ],
-      },
-    ],
-    createdAt: Date.now() - 2 * 60 * 1000,
-  },
-  {
-    id: "ORD003",
-    table: "Terraza 1",
-    items: [
-      {
-        name: "Pasta Carbonara",
-        quantity: 2,
-        subRecipes: [
-          { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", status: "Listo", prepTime: 12 },
-          { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", status: "Listo", prepTime: 5 },
-          { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", status: "Preparando", assignedCook: "cook1", prepTime: 4 },
-          { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", status: "Pendiente", prepTime: 2 },
-        ],
-      },
-    ],
-    createdAt: Date.now() - 5 * 60 * 1000,
-  },
-  {
-    id: "ORD004",
-    table: "Mesa 8",
-    items: [
-      {
-        name: "Hamburguesa XChef",
-        quantity: 1,
-        notes: "Poco hecha",
-        subRecipes: [
-          { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", status: "Preparando", assignedCook: "cook3", prepTime: 8 },
-          { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", status: "Pendiente", prepTime: 3 },
-        ],
-      },
-      {
-        name: "Papas Fritas",
-        quantity: 1,
-        subRecipes: [
-          { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", status: "Pendiente", prepTime: 10 },
-        ],
-      },
-    ],
-    createdAt: Date.now() - 8 * 60 * 1000,
-  },
-];
 
 const getSubRecipeStatusVariant = (status: SubRecipe["status"]) => {
   switch (status) {
@@ -165,6 +66,7 @@ function OrderTicket({
 }) {
   const [remainingTime, setRemainingTime] = useState("");
   const [urgencyColor, setUrgencyColor] = useState("border-border");
+  const { cooks } = useRestaurant();
 
   const totalPrepTime = order.items.reduce(
     (total, item) =>
@@ -261,7 +163,7 @@ function OrderTicket({
                       <Select
                         value={sr.assignedCook}
                         onValueChange={(cookId) =>
-                          onAssignCook(order.id, item.name, sr.id, cookId)
+                          onAssignCook(order.id, item.id, sr.id, cookId)
                         }
                         disabled={sr.status !== "Pendiente"}
                       >
@@ -287,7 +189,7 @@ function OrderTicket({
                       size="sm"
                       variant={sr.status === "Pendiente" ? "outline" : "default"}
                       onClick={() =>
-                        handleStatusChange(item.name, sr.id, sr.status)
+                        handleStatusChange(item.id, sr.id, sr.status)
                       }
                       className={cn(
                         sr.status === "Preparando" &&
@@ -309,7 +211,7 @@ function OrderTicket({
 }
 
 export default function CocinaPage() {
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const { orders, setOrders } = useRestaurant();
   const [selectedSubRecipe, setSelectedSubRecipe] = useState<SubRecipe | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
 
@@ -324,7 +226,7 @@ export default function CocinaPage() {
         if (order.id !== orderId) return order;
 
         const updatedItems = order.items.map((item) => {
-          if (item.name !== itemId) return item;
+          if (item.id !== itemId) return item;
 
           const updatedSubRecipes = item.subRecipes.map((sr) =>
             sr.id === subRecipeId ? { ...sr, ...updates } : sr
@@ -378,15 +280,17 @@ export default function CocinaPage() {
     }, 2000); // Check every 2 seconds if an order is complete
 
     return () => clearInterval(interval);
-  }, []);
+  }, [setOrders]);
+
+  const activeOrders = orders.filter(order => order.status !== 'Entregado' && order.status !== 'Cancelado');
 
   return (
     <div className="h-full">
       <h2 className="text-2xl font-headline mb-4 text-center">
-        Platillos ({orders.length})
+        Platillos ({activeOrders.length})
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
-        {orders
+        {activeOrders
           .sort((a, b) => a.createdAt - b.createdAt)
           .map((order) => (
             <OrderTicket

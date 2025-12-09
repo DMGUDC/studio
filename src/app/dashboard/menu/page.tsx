@@ -40,77 +40,12 @@ import {
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { useRestaurant } from "@/context/RestaurantContext";
+import type { Dish, Ingredient, SubRecipe } from '@/lib/types';
 
-const initialDishes = [
-  { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"] },
-  { id: "d2", name: "Ensalada César", category: "Ensaladas", price: 8.00, subRecipeIds: ["sr4", "sr5"] },
-  { id: "d3", name: "Pasta Carbonara", category: "Pastas", price: 14.00, subRecipeIds: ["sr6", "sr7", "sr8"] },
-  { id: "d4", name: "Hamburguesa XChef", category: "Hamburguesas", price: 11.50, subRecipeIds: ["sr10", "sr11"] },
-  { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, subRecipeIds: ["sr12"] },
-]
 
-const initialInventoryItems = [
-    { id: "inv1", name: "Tomates", unit: "kg", price: 1.50 },
-    { id: "inv2", name: "Pechuga de Pollo", unit: "kg", price: 8.00 },
-    { id: "inv3", name: "Queso Mozzarella", unit: "kg", price: 7.50 },
-    { id: "inv4", name: "Harina de Trigo", unit: "kg", price: 1.00 },
-    { id: "inv5", name: "Aceite de Oliva", unit: "litros", price: 12.00 },
-    { id: "inv6", name: "Vino Tinto", unit: "botellas", price: 9.50 },
-    { id: "inv7", name: "Servilletas", unit: "paquetes", price: 2.00 },
-    { id: "inv8", name: "Sal", unit: "kg", price: 0.50 },
-    { id: "inv9", name: "Levadura", unit: "g", price: 0.02 }, // Price per gram
-    { id: "inv10", name: "Salsa de tomate", unit: "litros", price: 2.50},
-    { id: "inv11", name: "Lechuga Romana", unit: "unidades", price: 0.80},
-    { id: "inv12", name: "Yemas de huevo", unit: "unidades", price: 0.20},
-    { id: "inv13", name: "Anchoas", unit: "latas", price: 3.00},
-    { id: "inv14", name: "Ajo", unit: "cabezas", price: 0.30},
-    { id: "inv15", name: "Mostaza", unit: "g", price: 0.01}, // Price per gram
-    { id: "inv16", name: "Pasta", unit: "kg", price: 2.00},
-    { id: "inv17", name: "Panceta", unit: "kg", price: 15.00},
-    { id: "inv18", name: "Queso Pecorino", unit: "kg", price: 25.00},
-    { id: "inv19", name: "Carne de res", unit: "kg", price: 10.00},
-    { id: "inv20", name: "Pan de hamburguesa", unit: "unidades", price: 0.50},
-    { id: "inv21", name: "Papas", unit: "kg", price: 1.20},
-];
-
-const initialSubRecipes = [
-    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10, ingredients: [{inventoryId: "inv4", quantity: 0.5, wastage: 0}, {inventoryId: "inv9", quantity: 10, wastage: 0}, {inventoryId: "inv8", quantity: 0.02, wastage: 0}] },
-    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5, ingredients: [{inventoryId: "inv10", quantity: 0.1, wastage: 5}, {inventoryId: "inv3", quantity: 0.2, wastage: 0}] },
-    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", prepTime: 15, ingredients: [] },
-    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5, ingredients: [{inventoryId: "inv11", quantity: 1, wastage: 15}] },
-    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7, ingredients: [{inventoryId: "inv12", quantity: 2, wastage: 0}, {inventoryId: "inv13", quantity: 0.5, wastage: 10}, {inventoryId: "inv14", quantity: 0.25, wastage: 20}, {inventoryId: "inv15", quantity: 10, wastage: 0}, {inventoryId: "inv5", quantity: 0.1, wastage: 0}] },
-    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12, ingredients: [{inventoryId: "inv16", quantity: 0.2, wastage: 0}] },
-    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5, ingredients: [{inventoryId: "inv17", quantity: 0.1, wastage: 30}] },
-    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4, ingredients: [{inventoryId: "inv12", quantity: 2, wastage: 0}, {inventoryId: "inv18", quantity: 0.05, wastage: 0}] },
-    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", prepTime: 2, ingredients: [] },
-    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8, ingredients: [{inventoryId: "inv19", quantity: 0.25, wastage: 25}] },
-    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3, ingredients: [{inventoryId: "inv20", quantity: 1, wastage: 0}, {inventoryId: "inv11", quantity: 0.1, wastage: 15}, {inventoryId: "inv1", quantity: 0.1, wastage: 10}] },
-    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10, ingredients: [{inventoryId: "inv21", quantity: 0.3, wastage: 20}] },
-]
-
-type Dish = {
-    id: string;
-    name: string;
-    category: string;
-    price: number;
-    subRecipeIds: string[];
-}
-
-type Ingredient = {
-    inventoryId: string;
-    quantity: number;
-    wastage: number; // Percentage
-}
-
-type SubRecipe = {
-    id: string;
-    name: string;
-    description: string;
-    prepTime: number; // in minutes
-    ingredients: Ingredient[];
-}
-
-function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id'>) => void; subRecipe?: SubRecipe | null }) {
+function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id' | 'status' | 'assignedCook'>) => void; subRecipe?: SubRecipe | null }) {
+    const { inventoryItems } = useRestaurant();
     const [name, setName] = useState(subRecipe?.name || "");
     const [description, setDescription] = useState(subRecipe?.description || "");
     const [prepTime, setPrepTime] = useState(subRecipe?.prepTime || 0);
@@ -169,7 +104,7 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
                     <div className="col-span-1"></div>
                 </div>
                 {ingredients.map((ing, index) => {
-                    const invItem = initialInventoryItems.find(i => i.id === ing.inventoryId);
+                    const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
                     const cost = invItem ? invItem.price * ing.quantity * (1 + ing.wastage / 100) : 0;
                     return (
                     <div key={index} className="grid grid-cols-12 items-center gap-2">
@@ -179,7 +114,7 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
                             onChange={(e) => handleIngredientChange(index, 'inventoryId', e.target.value)}
                         >
                             <option value="" disabled>Seleccionar</option>
-                            {initialInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                            {inventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
 
                         <Input 
@@ -219,6 +154,7 @@ function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, '
 }
 
 function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, 'id'>) => void; dish?: Dish | null, allSubRecipes: SubRecipe[] }) {
+    const { inventoryItems } = useRestaurant();
     const [name, setName] = useState(dish?.name || "");
     const [category, setCategory] = useState(dish?.category || "");
     const [price, setPrice] = useState(dish?.price || 0);
@@ -230,7 +166,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
             const subRecipe = allSubRecipes.find(sr => sr.id === srId);
             if (subRecipe) {
                 subRecipe.ingredients.forEach(ing => {
-                    const invItem = initialInventoryItems.find(i => i.id === ing.inventoryId);
+                    const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
                     if (invItem) {
                         const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
                         totalCost += rawQuantity * invItem.price;
@@ -239,7 +175,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
             }
         });
         return totalCost;
-    }, [selectedSubRecipeIds, allSubRecipes]);
+    }, [selectedSubRecipeIds, allSubRecipes, inventoryItems]);
 
     const handleSave = () => {
         onSave({ name, category, price, subRecipeIds: selectedSubRecipeIds });
@@ -305,8 +241,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
 }
 
 export default function MenuPage() {
-    const [dishes, setDishes] = useState<Dish[]>(initialDishes);
-    const [subRecipes, setSubRecipes] = useState<SubRecipe[]>(initialSubRecipes);
+    const { dishes, setDishes, subRecipes, setSubRecipes } = useRestaurant();
     
     const [isDishModalOpen, setDishModalOpen] = useState(false);
     const [isSubRecipeModalOpen, setSubRecipeModalOpen] = useState(false);
@@ -349,11 +284,11 @@ export default function MenuPage() {
         setSubRecipeModalOpen(true);
     }
 
-    const handleSaveSubRecipe = (data: Omit<SubRecipe, 'id'>) => {
+    const handleSaveSubRecipe = (data: Omit<SubRecipe, 'id' | 'status' | 'assignedCook'>) => {
         if(editingSubRecipe) {
             setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, ...data} : sr));
         } else {
-            const newSubRecipe: SubRecipe = { id: `sr${Date.now()}`, ...data };
+            const newSubRecipe: SubRecipe = { id: `sr${Date.now()}`, ...data, status: 'Pendiente', assignedCook: undefined };
             setSubRecipes([...subRecipes, newSubRecipe]);
         }
         setSubRecipeModalOpen(false);

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { XChefLogo } from "@/components/icons";
 import { UserNav } from "@/components/user-nav";
+import { RestaurantProvider } from "@/context/RestaurantContext";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -57,68 +58,70 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <XChefLogo className="h-8 w-8 text-primary" />
-            <span className="text-lg font-semibold font-headline">XChef</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            {bottomNavItems.map((item) => (
-               <SidebarMenuItem key={item.href}>
-                 <Link href={item.href}>
-                  <SidebarMenuButton tooltip={item.label}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                 </Link>
-               </SidebarMenuItem>
-            ))}
-             <SidebarMenuItem>
-                <Link href="/login">
-                  <SidebarMenuButton tooltip="Cerrar Sesión">
-                    <LogOut />
-                    <span>Cerrar Sesión</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="flex flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
-                <h1 className="text-lg font-semibold font-headline">
-                    {navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard"}
-                </h1>
+    <RestaurantProvider>
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center gap-2">
+              <XChefLogo className="h-8 w-8 text-primary" />
+              <span className="text-lg font-semibold font-headline">XChef</span>
             </div>
-            <UserNav />
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href}>
+                    <SidebarMenuButton
+                      isActive={pathname === item.href}
+                      tooltip={item.label}
+                    >
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              {bottomNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href}>
+                    <SidebarMenuButton tooltip={item.label}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+              <SidebarMenuItem>
+                  <Link href="/login">
+                    <SidebarMenuButton tooltip="Cerrar Sesión">
+                      <LogOut />
+                      <span>Cerrar Sesión</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="flex flex-col">
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+              <SidebarTrigger className="md:hidden" />
+              <div className="flex-1">
+                  <h1 className="text-lg font-semibold font-headline">
+                      {navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard"}
+                  </h1>
+              </div>
+              <UserNav />
+          </header>
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </RestaurantProvider>
   );
 }

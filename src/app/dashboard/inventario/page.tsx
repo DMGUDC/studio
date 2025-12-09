@@ -38,19 +38,9 @@ import {
     DialogClose,
   } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useRestaurant } from "@/context/RestaurantContext";
+import type { InventoryItem } from "@/lib/types";
 
-const initialInventoryItems = [
-  { id: "inv1", name: "Tomates", category: "Vegetales", stock: 20, unit: "kg", threshold: 5, price: 1.50 },
-  { id: "inv2", name: "Pechuga de Pollo", category: "Carnes", stock: 15, unit: "kg", threshold: 10, price: 8.00 },
-  { id: "inv3", name: "Queso Mozzarella", category: "Lácteos", stock: 8, unit: "kg", threshold: 4, price: 7.50 },
-  { id: "inv4", name: "Harina de Trigo", category: "Secos", stock: 50, unit: "kg", threshold: 20, price: 1.00 },
-  { id: "inv5", name: "Aceite de Oliva", category: "Aceites", stock: 10, unit: "litros", threshold: 5, price: 12.00 },
-  { id: "inv6", name: "Vino Tinto", category: "Bebidas", stock: 3, unit: "botellas", threshold: 5, price: 9.50 },
-  { id: "inv7", name: "Servilletas", category: "No Alimentos", stock: 5, unit: "paquetes", threshold: 2, price: 2.00 },
-  { id: "inv8", name: "Sal", category: "Condimentos", stock: 25, unit: "kg", threshold: 2, price: 0.50 },
-];
-
-type InventoryItem = typeof initialInventoryItems[0];
 type ProductData = Omit<InventoryItem, 'id'>;
 
 function ProductForm({ onSave, productToEdit }: { onSave: (product: ProductData) => void; productToEdit?: ProductData | null }) {
@@ -124,7 +114,7 @@ function ProductForm({ onSave, productToEdit }: { onSave: (product: ProductData)
 }
 
 export default function InventarioPage() {
-  const [inventoryItems, setInventoryItems] = useState(initialInventoryItems);
+  const { inventoryItems, setInventoryItems } = useRestaurant();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
