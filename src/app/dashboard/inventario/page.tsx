@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, FileDown, ArrowDownUp, Trash } from "lucide-react";
+import { PlusCircle, FileDown, ArrowDownUp, Trash, Edit, MoreHorizontal } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuLabel
   } from "@/components/ui/dropdown-menu";
 import {
     Dialog,
@@ -50,11 +51,10 @@ const initialInventoryItems = [
 ];
 
 type InventoryItem = typeof initialInventoryItems[0];
-type SortKey = "name" | "category";
-type NewProduct = Omit<InventoryItem, 'id'>;
+type ProductData = Omit<InventoryItem, 'id'>;
 
-function NewProductForm({ onSave }: { onSave: (product: NewProduct) => void; }) {
-    const [product, setProduct] = useState<Partial<NewProduct>>({
+function ProductForm({ onSave, productToEdit }: { onSave: (product: ProductData) => void; productToEdit?: ProductData | null }) {
+    const [product, setProduct] = useState<Partial<ProductData>>(productToEdit || {
         name: '',
         category: '',
         stock: 0,
@@ -74,7 +74,7 @@ function NewProductForm({ onSave }: { onSave: (product: NewProduct) => void; }) 
     const handleSave = () => {
         // Basic validation
         if (product.name && product.category && product.unit) {
-            onSave(product as NewProduct);
+            onSave(product as ProductData);
         } else {
             // You might want to add better user feedback here
             alert("Por favor, completa todos los campos requeridos.");
@@ -128,7 +128,10 @@ export default function InventarioPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [isNewProductModalOpen, setNewProductModalOpen] = useState(false);
+  const [isProductModalOpen, setProductModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+
+  type SortKey = "name" | "category";
 
   const sortedAndFilteredItems = useMemo(() => {
     let items = [...inventoryItems].filter((item) =>
@@ -154,14 +157,29 @@ export default function InventarioPage() {
         setSortOrder('asc');
     }
   }
+  
+  const handleAddNew = () => {
+    setEditingItem(null);
+    setProductModalOpen(true);
+  }
 
-  const handleSaveProduct = (product: NewProduct) => {
-    const newProduct: InventoryItem = {
-        id: `inv${Date.now()}`,
-        ...product
-    };
-    setInventoryItems(prev => [...prev, newProduct]);
-    setNewProductModalOpen(false);
+  const handleEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+    setProductModalOpen(true);
+  }
+
+  const handleSaveProduct = (product: ProductData) => {
+    if(editingItem) {
+        setInventoryItems(prev => prev.map(item => item.id === editingItem.id ? { ...editingItem, ...product } : item));
+    } else {
+        const newProduct: InventoryItem = {
+            id: `inv${Date.now()}`,
+            ...product
+        };
+        setInventoryItems(prev => [...prev, newProduct]);
+    }
+    setProductModalOpen(false);
+    setEditingItem(null);
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -184,7 +202,7 @@ export default function InventarioPage() {
             <Button variant="outline">
               <FileDown className="mr-2 h-4 w-4" /> Exportar
             </Button>
-            <Button onClick={() => setNewProductModalOpen(true)}>
+            <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Producto
             </Button>
           </div>
@@ -252,9 +270,24 @@ export default function InventarioPage() {
                     )}
                   </TableCell>
                    <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
-                            <Trash className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEdit(item)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    <span>Editar</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive focus:text-destructive">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    <span>Eliminar</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                    </TableCell>
                 </TableRow>
               );
@@ -264,13 +297,15 @@ export default function InventarioPage() {
       </CardContent>
     </Card>
 
-    <Dialog open={isNewProductModalOpen} onOpenChange={setNewProductModalOpen}>
+    <Dialog open={isProductModalOpen} onOpenChange={setProductModalOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Nuevo Producto de Inventario</DialogTitle>
-                <DialogDescription>Añade un nuevo producto al sistema de inventario.</DialogDescription>
+                <DialogTitle>{editingItem ? 'Editar Producto' : 'Nuevo Producto de Inventario'}</DialogTitle>
+                <DialogDescription>
+                    {editingItem ? 'Modifica los detalles de este producto.' : 'Añade un nuevo producto al sistema de inventario.'}
+                </DialogDescription>
             </DialogHeader>
-            <NewProductForm onSave={handleSaveProduct} />
+            <ProductForm onSave={handleSaveProduct} productToEdit={editingItem} />
         </DialogContent>
     </Dialog>
     </>
