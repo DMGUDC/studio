@@ -14,6 +14,7 @@ import {
   Settings,
   Table,
   Users,
+  CreditCard,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const allNavItems = [
   { href: "/dashboard/menu", icon: Menu, label: "Menú" },
   { href: "/dashboard/inventario", icon: Boxes, label: "Inventario" },
   { href: "/dashboard/finanzas", icon: LineChart, label: "Finanzas" },
+  { href: "/dashboard/facturacion", icon: CreditCard, label: "Facturación" },
   { href: "/dashboard/usuarios", icon: Users, label: "Usuarios" },
 ];
 
@@ -60,7 +62,7 @@ export default function DashboardLayout({
 
   const userPermissions = user?.permissions || [];
 
-  const navItems = allNavItems.filter(item => userPermissions.includes(item.href));
+  const navItems = allNavItems.filter(item => userPermissions.includes(item.href) || item.href === '/dashboard/facturacion');
   const filteredBottomNavItems = bottomNavItems;
 
 
