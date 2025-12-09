@@ -1,6 +1,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -96,4 +97,5 @@ export type Cook = {
     email: string;
     role: UserRole;
     status: "Activo" | "Inactivo";
+    permissions: string[];
   }

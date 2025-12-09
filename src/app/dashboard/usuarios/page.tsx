@@ -27,7 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, Edit, Trash } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Edit, Trash, LayoutDashboard, Table as TableIcon, ClipboardList, ChefHat, Menu, Boxes, LineChart, Users } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -38,6 +38,7 @@ import {
     DialogClose,
   } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -49,14 +50,25 @@ import { useAuth } from '@/context/AuthContext';
 import type { User, UserRole } from '@/lib/types';
 
 
-type UserFormData = Omit<User, 'id'>;
+const allPermissions = [
+    { id: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "/dashboard/mesas", label: "Gestión de Mesas", icon: TableIcon },
+    { id: "/dashboard/pedidos", label: "Pedidos", icon: ClipboardList },
+    { id: "/dashboard/cocina", label: "KDS Cocina", icon: ChefHat },
+    { id: "/dashboard/menu", label: "Menú", icon: Menu },
+    { id: "/dashboard/inventario", label: "Inventario", icon: Boxes },
+    { id: "/dashboard/finanzas", label: "Finanzas", icon: LineChart },
+    { id: "/dashboard/usuarios", label: "Usuarios", icon: Users },
+];
 
-function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void; userToEdit?: UserFormData | null }) {
+type UserFormData = Omit<User, 'id' | 'role'>;
+
+function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void; userToEdit?: Omit<User, 'id' | 'role'> | null }) {
     const [user, setUser] = useState<Partial<UserFormData>>(userToEdit || {
         name: '',
         email: '',
-        role: 'Mesero',
-        status: 'Activo'
+        status: 'Activo',
+        permissions: []
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,12 +76,23 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
         setUser(prev => ({ ...prev, [name]: value }));
     };
     
-    const handleSelectChange = (name: 'role' | 'status', value: string) => {
+    const handleSelectChange = (name: 'status', value: string) => {
         setUser(prev => ({...prev, [name]: value}));
     }
 
+    const handlePermissionChange = (permissionId: string) => {
+        setUser(prev => {
+            const permissions = prev.permissions || [];
+            if (permissions.includes(permissionId)) {
+                return { ...prev, permissions: permissions.filter(p => p !== permissionId) };
+            } else {
+                return { ...prev, permissions: [...permissions, permissionId] };
+            }
+        });
+    }
+
     const handleSave = () => {
-        if (user.name && user.email && user.role && user.status) {
+        if (user.name && user.email && user.status && user.permissions) {
             onSave(user as UserFormData);
         } else {
             alert("Por favor, completa todos los campos.");
@@ -89,17 +112,6 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="role">Rol</Label>
-                    <Select value={user.role} onValueChange={(value) => handleSelectChange('role', value as UserRole)}>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar Rol"/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Gerente">Gerente</SelectItem>
-                            <SelectItem value="Mesero">Mesero</SelectItem>
-                            <SelectItem value="Cocinero">Cocinero</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
                     <Select value={user.status} onValueChange={(value) => handleSelectChange('status', value)}>
@@ -109,6 +121,23 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
                             <SelectItem value="Inactivo">Inactivo</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+            </div>
+            <div className='space-y-2'>
+                <Label>Permisos de Acceso</Label>
+                <div className='grid grid-cols-2 gap-2 rounded-md border p-4'>
+                    {allPermissions.map(permission => (
+                        <div key={permission.id} className="flex items-center space-x-2">
+                            <Checkbox
+                                id={`perm-${permission.id}`}
+                                checked={user.permissions?.includes(permission.id)}
+                                onCheckedChange={() => handlePermissionChange(permission.id)}
+                            />
+                            <label htmlFor={`perm-${permission.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                {permission.label}
+                            </label>
+                        </div>
+                    ))}
                 </div>
             </div>
             <DialogFooter>
@@ -144,10 +173,11 @@ export default function UsuariosPage() {
 
   const handleSaveUser = (userData: UserFormData) => {
     if(editingUser) {
-        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData } : u));
+        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData, role: 'Mesero' } : u));
     } else {
         const newUser: User = {
             id: `usr${Date.now()}`,
+            role: 'Mesero', // Default role, permissions handle access
             ...userData
         };
         setUsers(prev => [...prev, newUser]);
@@ -169,7 +199,7 @@ export default function UsuariosPage() {
             <div>
                 <CardTitle>Gestión de Usuarios</CardTitle>
                 <CardDescription>
-                Crea, modifica y gestiona los usuarios del sistema.
+                Crea, modifica y gestiona los usuarios y sus permisos en el sistema.
                 </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -186,7 +216,7 @@ export default function UsuariosPage() {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
+              <TableHead>Permisos</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
@@ -199,7 +229,7 @@ export default function UsuariosPage() {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                      <Badge variant={roleVariant[user.role]}>{user.role}</Badge>
+                      <Badge variant={'secondary'}>{user.permissions.length} Permisos</Badge>
                   </TableCell>
                   <TableCell>
                       <Badge variant={user.status === 'Activo' ? 'outline' : 'destructive'}>{user.status}</Badge>
@@ -232,11 +262,11 @@ export default function UsuariosPage() {
       </CardContent>
     </Card>
     <Dialog open={isModalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
                 <DialogDescription>
-                    {editingUser ? 'Modifica los detalles del usuario.' : 'Añade un nuevo usuario y asigna un rol.'}
+                    {editingUser ? 'Modifica los detalles y permisos del usuario.' : 'Añade un nuevo usuario y asigna sus permisos de acceso.'}
                 </DialogDescription>
             </DialogHeader>
             <UserForm onSave={handleSaveUser} userToEdit={editingUser} />

@@ -36,18 +36,18 @@ import { useAuth } from "@/context/AuthContext";
 import type { UserRole } from "@/lib/types";
 
 const allNavItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", roles: ["Gerente", "Mesero"] },
-  { href: "/dashboard/mesas", icon: Table, label: "Gestión de Mesas", roles: ["Gerente", "Mesero"] },
-  { href: "/dashboard/pedidos", icon: ClipboardList, label: "Pedidos", roles: ["Gerente", "Mesero"] },
-  { href: "/dashboard/cocina", icon: ChefHat, label: "KDS Cocina", roles: ["Gerente", "Cocinero"] },
-  { href: "/dashboard/menu", icon: Menu, label: "Menú", roles: ["Gerente", "Cocinero"] },
-  { href: "/dashboard/inventario", icon: Boxes, label: "Inventario", roles: ["Gerente", "Cocinero"] },
-  { href: "/dashboard/finanzas", icon: LineChart, label: "Finanzas", roles: ["Gerente"] },
-  { href: "/dashboard/usuarios", icon: Users, label: "Usuarios", roles: ["Gerente"] },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard/mesas", icon: Table, label: "Gestión de Mesas" },
+  { href: "/dashboard/pedidos", icon: ClipboardList, label: "Pedidos" },
+  { href: "/dashboard/cocina", icon: ChefHat, label: "KDS Cocina" },
+  { href: "/dashboard/menu", icon: Menu, label: "Menú" },
+  { href: "/dashboard/inventario", icon: Boxes, label: "Inventario" },
+  { href: "/dashboard/finanzas", icon: LineChart, label: "Finanzas" },
+  { href: "/dashboard/usuarios", icon: Users, label: "Usuarios" },
 ];
 
 const bottomNavItems = [
-  { href: "#", icon: Settings, label: "Ajustes", roles: ["Gerente", "Mesero", "Cocinero"] },
+  { href: "#", icon: Settings, label: "Ajustes" },
 ];
 
 export default function DashboardLayout({
@@ -58,10 +58,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const userRole = user?.role;
+  const userPermissions = user?.permissions || [];
 
-  const navItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
-  const filteredBottomNavItems = bottomNavItems.filter(item => userRole && item.roles.includes(userRole));
+  const navItems = allNavItems.filter(item => userPermissions.includes(item.href));
+  const filteredBottomNavItems = bottomNavItems;
+
 
   return (
     <RestaurantProvider>

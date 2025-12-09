@@ -1,16 +1,17 @@
 
 
 
+
 import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord, User } from './types';
 
 export const initialUsers: User[] = [
-    { id: 'usr01', name: "Gerente Demo", email: "gerente@xchef.local", role: "Gerente", status: "Activo" },
-    { id: 'usr02', name: "Carlos", email: "mesero@xchef.local", role: "Mesero", status: "Activo" },
-    { id: 'usr03', name: "Ana", email: "ana@xchef.local", role: "Mesero", status: "Activo" },
-    { id: 'usr04', name: "Sofia", email: "sofia@xchef.local", role: "Mesero", status: "Inactivo" },
-    { id: 'usr05', name: "Juan", email: "cocinero@xchef.local", role: "Cocinero", status: "Activo" },
-    { id: 'usr06', name: "Maria", email: "maria@xchef.local", role: "Cocinero", status: "Activo" },
-    { id: 'usr07', name: "Pedro", email: "pedro@xchef.local", role: "Cocinero", status: "Activo" },
+    { id: 'usr01', name: "Gerente Demo", email: "gerente@xchef.local", role: "Gerente", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos", "/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario", "/dashboard/finanzas", "/dashboard/usuarios"] },
+    { id: 'usr02', name: "Carlos", email: "mesero@xchef.local", role: "Mesero", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },
+    { id: 'usr03', name: "Ana", email: "ana@xchef.local", role: "Mesero", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },
+    { id: 'usr04', name: "Sofia", email: "sofia@xchef.local", role: "Mesero", status: "Inactivo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },
+    { id: 'usr05', name: "Juan", email: "cocinero@xchef.local", role: "Cocinero", status: "Activo", permissions: ["/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario"] },
+    { id: 'usr06', name: "Maria", email: "maria@xchef.local", role: "Cocinero", status: "Activo", permissions: ["/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario"] },
+    { id: 'usr07', name: "Pedro", email: "pedro@xchef.local", role: "Cocinero", status: "Activo", permissions: ["/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario"] },
   ];
   
 
