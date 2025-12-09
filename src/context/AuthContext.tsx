@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
     user: User | null;
     users: User[];
-    login: (email: string) => boolean;
+    login: (email: string) => User | null;
     logout: () => void;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     updateUserAvatar: (userId: string, avatarUrl: string) => void;
@@ -22,14 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
-    const login = (email: string): boolean => {
+    const login = (email: string): User | null => {
         const foundUser = users.find(u => u.email === email);
         if (foundUser && foundUser.status === 'Activo') {
             setUser(foundUser);
-            return true;
+            return foundUser;
         }
         setUser(null);
-        return false;
+        return null;
     };
 
     const logout = () => {

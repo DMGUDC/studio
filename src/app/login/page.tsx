@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { XChefLogo } from "@/components/icons";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { allNavItems } from "@/app/dashboard/layout";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,13 +33,21 @@ export default function LoginPage() {
 
     // Simulate API call
     setTimeout(() => {
-      // Password is not validated for this demo
-      if (login(email)) {
+      const loggedInUser = login(email);
+      if (loggedInUser) {
         toast({
           title: "Inicio de Sesión Exitoso",
           description: "Bienvenido a XChef.",
         });
-        router.push("/dashboard");
+        
+        // Find the first page the user has access to
+        const userPermissions = loggedInUser.permissions || [];
+        const availableNavItems = allNavItems.filter(item => userPermissions.includes(item.href));
+        
+        const redirectTo = availableNavItems.length > 0 ? availableNavItems[0].href : '/login';
+
+        router.push(redirectTo);
+
       } else {
         toast({
           variant: "destructive",

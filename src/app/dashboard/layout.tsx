@@ -36,7 +36,7 @@ import { RestaurantProvider } from "@/context/RestaurantContext";
 import { useAuth } from "@/context/AuthContext";
 import type { UserRole } from "@/lib/types";
 
-const allNavItems = [
+export const allNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/dashboard/mesas", icon: Table, label: "Gestión de Mesas" },
   { href: "/dashboard/pedidos", icon: ClipboardList, label: "Pedidos" },
