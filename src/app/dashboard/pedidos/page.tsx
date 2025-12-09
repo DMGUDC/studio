@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText, PlusCircle } from "lucide-react";
+import { MoreHorizontal, FileText, PlusCircle, Trash } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -26,7 +26,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -34,9 +33,18 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
-const ordersData = [
+const initialOrders = [
   {
     id: "ORD001",
     table: "Mesa 5",
@@ -45,7 +53,7 @@ const ordersData = [
     total: 42.5,
     timestamp: "hace 5 minutos",
     items: [
-        { id: 'item1', name: 'Pizza Pepperoni', quantity: 1, price: 15.00 },
+        { id: 'd1', name: 'Pizza Margherita', quantity: 1, price: 12.50 },
         { id: 'item2', name: 'Refresco', quantity: 2, price: 2.50 },
         { id: 'item3', name: 'Tiramisú', quantity: 1, price: 7.50 },
     ]
@@ -97,7 +105,36 @@ const ordersData = [
   },
 ];
 
-type Order = typeof ordersData[0];
+const initialDishes = [
+    { id: "d1", name: "Pizza Margherita", category: "Pizzas", price: 12.50, subRecipeIds: ["sr1", "sr2", "sr3"] },
+    { id: "d2", name: "Ensalada César", category: "Ensaladas", price: 8.00, subRecipeIds: ["sr4", "sr5"] },
+    { id: "d3", name: "Pasta Carbonara", category: "Pastas", price: 14.00, subRecipeIds: ["sr6", "sr7", "sr8"] },
+    { id: "d4", name: "Hamburguesa XChef", category: "Hamburguesas", price: 11.50, subRecipeIds: ["sr10", "sr11"] },
+    { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, subRecipeIds: ["sr12"] },
+];
+
+const initialTables = [
+    { id: 1, name: "Mesa 1"}, { id: 2, name: "Mesa 2"}, { id: 3, name: "Mesa 3"},
+    { id: 4, name: "Mesa 4"}, { id: 5, name: "Mesa 5"}, { id: 6, name: "Barra 1"},
+    { id: 7, name: "Barra 2"}, { id: 8, name: "Mesa 8"}, { id: 9, name: "Terraza 1"},
+    { id: 10, name: "Terraza 2"}, { id: 11, name: "Terraza 3"}, { id: 12, name: "Terraza 4"},
+];
+
+const initialWaiters = [
+    { id: 'usr02', name: "Carlos" },
+    { id: 'usr03', name: "Ana" },
+    { id: 'usr04', name: "Sofia" },
+];
+
+
+type OrderItem = {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+};
+type Order = (typeof initialOrders)[0];
+type Dish = (typeof initialDishes)[0];
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   Entregado: "outline",
@@ -154,14 +191,151 @@ function OrderDetailsDialog({ order, open, onOpenChange }: { order: Order | null
     )
 }
 
+function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: Omit<Order, 'id' | 'status' | 'timestamp'>) => void }) {
+    const [table, setTable] = useState('');
+    const [waiter, setWaiter] = useState('');
+    const [items, setItems] = useState<OrderItem[]>([]);
+    const [selectedDish, setSelectedDish] = useState('');
+
+    const addItem = () => {
+        if (!selectedDish) return;
+        const dishToAdd = initialDishes.find(d => d.id === selectedDish);
+        if (!dishToAdd) return;
+        
+        const existingItem = items.find(item => item.id === dishToAdd.id);
+        if (existingItem) {
+            setItems(items.map(item => item.id === dishToAdd.id ? { ...item, quantity: item.quantity + 1 } : item));
+        } else {
+            setItems([...items, { id: dishToAdd.id, name: dishToAdd.name, price: dishToAdd.price, quantity: 1 }]);
+        }
+    };
+
+    const removeItem = (itemId: string) => {
+        setItems(items.filter(item => item.id !== itemId));
+    };
+
+    const total = useMemo(() => {
+        return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }, [items]);
+
+    const handleSave = () => {
+        if (table && waiter && items.length > 0) {
+            onSave({ table, waiter, items, total });
+            setTable('');
+            setWaiter('');
+            setItems([]);
+            setSelectedDish('');
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Nuevo Pedido</DialogTitle>
+                    <DialogDescription>Completa los detalles del nuevo pedido.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Mesa</Label>
+                            <Select value={table} onValueChange={setTable}>
+                                <SelectTrigger><SelectValue placeholder="Seleccionar mesa..." /></SelectTrigger>
+                                <SelectContent>
+                                    {initialTables.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                             <Label>Mesero</Label>
+                            <Select value={waiter} onValueChange={setWaiter}>
+                                <SelectTrigger><SelectValue placeholder="Seleccionar mesero..." /></SelectTrigger>
+                                <SelectContent>
+                                    {initialWaiters.map(w => <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Añadir Platillo</Label>
+                        <div className="flex gap-2">
+                            <Select value={selectedDish} onValueChange={setSelectedDish}>
+                                <SelectTrigger><SelectValue placeholder="Seleccionar platillo..." /></SelectTrigger>
+                                <SelectContent>
+                                    {initialDishes.map(d => <SelectItem key={d.id} value={d.id}>{d.name} - ${d.price.toFixed(2)}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={addItem}><PlusCircle className="mr-2 h-4 w-4"/>Añadir</Button>
+                        </div>
+                    </div>
+
+                    <Card>
+                        <CardHeader><CardTitle>Items del Pedido</CardTitle></CardHeader>
+                        <CardContent>
+                            {items.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Cant.</TableHead>
+                                            <TableHead>Producto</TableHead>
+                                            <TableHead className="text-right">Subtotal</TableHead>
+                                            <TableHead></TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {items.map(item => (
+                                            <TableRow key={item.id}>
+                                                <TableCell>{item.quantity}x</TableCell>
+                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                                                <TableCell className='text-right'>
+                                                    <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)}>
+                                                        <Trash className='h-4 w-4 text-destructive' />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : <p className="text-sm text-muted-foreground text-center">Añade platillos al pedido.</p>}
+                        </CardContent>
+                         {items.length > 0 && (
+                            <DialogFooter className="bg-muted/50 p-4 font-bold text-lg">
+                                Total: ${total.toFixed(2)}
+                            </DialogFooter>
+                         )}
+                    </Card>
+
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                    <Button onClick={handleSave}>Guardar Pedido</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function PedidosPage() {
-  const [orders, setOrders] = useState(ordersData);
+  const [orders, setOrders] = useState(initialOrders);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
+  const [isNewOrderOpen, setNewOrderOpen] = useState(false);
 
   const handleShowDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsOpen(true);
+  }
+
+  const handleSaveOrder = (newOrderData: Omit<Order, 'id' | 'status' | 'timestamp'>) => {
+    const newOrder: Order = {
+        ...newOrderData,
+        id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
+        status: "Pendiente",
+        timestamp: "justo ahora",
+    };
+    setOrders(prev => [newOrder, ...prev]);
+    setNewOrderOpen(false);
   }
 
   return (
@@ -177,7 +351,7 @@ export default function PedidosPage() {
             </div>
             <div className="flex gap-2">
                 <Input placeholder="Buscar pedido..." className="max-w-xs" />
-                <Button>
+                <Button onClick={() => setNewOrderOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Pedido
                 </Button>
             </div>
@@ -206,7 +380,7 @@ export default function PedidosPage() {
                 <TableCell>{order.table}</TableCell>
                 <TableCell>{order.waiter}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant[order.status]} className={cn(statusColor[order.status])}>
+                  <Badge variant={statusVariant[order.status]} className={statusColor[order.status]}>
                     {order.status}
                   </Badge>
                 </TableCell>
@@ -237,6 +411,7 @@ export default function PedidosPage() {
       </CardContent>
     </Card>
     <OrderDetailsDialog order={selectedOrder} open={isDetailsOpen} onOpenChange={setDetailsOpen} />
+    <NewOrderDialog open={isNewOrderOpen} onOpenChange={setNewOrderOpen} onSave={handleSaveOrder} />
     </>
   );
 }
