@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Users, DollarSign, ClipboardList, Activity } from "lucide-react";
+import { BarChart, Users, DollarSign, ClipboardList, Activity, ShoppingCart, Utensils } from "lucide-react";
 
 import {
   ChartContainer,
@@ -26,7 +26,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { Bar, BarChart as BarChartComponent, XAxis, YAxis } from "recharts";
+import { Bar, BarChart as BarChartComponent } from "recharts";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { useMemo } from "react";
 import { isToday, getMonth, format } from "date-fns";
@@ -97,6 +97,25 @@ export default function DashboardPage() {
       }
     });
 
+    const dishRevenue: { [key: string]: number } = {};
+    orders
+      .filter(o => o.status === 'Entregado' || o.status === 'Cancelado')
+      .forEach(o => {
+        o.items.forEach(item => {
+          dishRevenue[item.name] = (dishRevenue[item.name] || 0) + item.price * item.quantity;
+        });
+      });
+    
+    const topDishes = Object.entries(dishRevenue)
+        .map(([name, totalRevenue]) => ({ name, totalRevenue }))
+        .sort((a,b) => b.totalRevenue - a.totalRevenue)
+        .slice(0, 5);
+
+    const recentExpenses = financials
+        .filter(f => f.type === 'expense')
+        .sort((a,b) => b.date.getTime() - a.date.getTime())
+        .slice(0, 5);
+
 
     return {
       todayRevenue,
@@ -106,6 +125,8 @@ export default function DashboardPage() {
       preparingOrdersCount,
       recentOrders,
       chartData: monthlyData,
+      topDishes,
+      recentExpenses,
     };
   }, [orders, financials]);
 
@@ -231,6 +252,65 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Utensils className="h-5 w-5 text-muted-foreground"/>
+                        <CardTitle>Platillos más vendidos</CardTitle>
+                    </div>
+                    <CardDescription>Top 5 platillos por ingresos generados.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Platillo</TableHead>
+                                <TableHead className="text-right">Ingresos</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {dashboardStats.topDishes.map(dish => (
+                                <TableRow key={dish.name}>
+                                    <TableCell className="font-medium">{dish.name}</TableCell>
+                                    <TableCell className="text-right">${dish.totalRevenue.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            <Card>
+                 <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <ShoppingCart className="h-5 w-5 text-muted-foreground"/>
+                        <CardTitle>Gastos Recientes</CardTitle>
+                    </div>
+                    <CardDescription>Últimos gastos registrados por reabastecimiento.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Descripción</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead className="text-right">Monto</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {dashboardStats.recentExpenses.map(expense => (
+                                <TableRow key={expense.id}>
+                                    <TableCell className="font-medium">{expense.description}</TableCell>
+                                    <TableCell>{format(expense.date, 'dd/MM/yyyy')}</TableCell>
+                                    <TableCell className="text-right text-destructive">-${expense.amount.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
     </div>
   );
 }
