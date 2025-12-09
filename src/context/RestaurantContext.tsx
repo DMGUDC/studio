@@ -2,13 +2,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import type { Order, OrderItem, SubRecipe, Dish, InventoryItem, Cook, Table, Waiter, NewOrderData, FinancialRecord, PaymentMethod } from '@/lib/types';
+import type { Order, OrderItem, SubRecipe, Dish, InventoryItem, Cook, Table, Waiter, NewOrderData, EditedOrderData, FinancialRecord, PaymentMethod } from '@/lib/types';
 import { initialOrders, initialDishes, initialInventoryItems, initialSubRecipes, initialCooks, initialTables, initialWaiters, initialFinancials } from '@/lib/data';
 
 interface RestaurantContextType {
     orders: Order[];
     setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
     addOrder: (newOrderData: NewOrderData) => void;
+    updateOrder: (editedOrderData: EditedOrderData) => void;
     settleOrder: (orderId: string, paymentMethod: PaymentMethod) => void;
     updateOrderStatus: (orderId: string, status: Order['status']) => void;
     dishes: Dish[];
@@ -34,8 +35,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const [subRecipes, setSubRecipes] = useState<SubRecipe[]>(initialSubRecipes);
     const [financials, setFinancials] = useState<FinancialRecord[]>(initialFinancials);
 
-    const addOrder = (newOrderData: NewOrderData) => {
-        const orderItemsWithSubRecipes = newOrderData.items.map(item => {
+    const getItemsWithSubrecipes = (items: OrderItem[]) => {
+        return items.map(item => {
             const dish = dishes.find(d => d.id === item.id);
             if (!dish) return { ...item, subRecipes: [] };
 
@@ -48,6 +49,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             
             return { ...item, subRecipes: associatedSubRecipes };
         });
+    }
+
+    const addOrder = (newOrderData: NewOrderData) => {
+        const orderItemsWithSubRecipes = getItemsWithSubrecipes(newOrderData.items);
 
         const newOrder: Order = {
             id: `ORD${(orders.length + 1).toString().padStart(3, '0')}`,
@@ -59,6 +64,30 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             items: orderItemsWithSubRecipes,
         };
         setOrders(prev => [newOrder, ...prev]);
+    }
+
+    const updateOrder = (editedOrderData: EditedOrderData) => {
+        setOrders(prevOrders => prevOrders.map(order => {
+            if (order.id === editedOrderData.id) {
+                // We keep existing subrecipe status if the item is the same
+                const updatedItems = editedOrderData.items.map(newItem => {
+                    const oldItem = order.items.find(old => old.id === newItem.id);
+                    if (oldItem) {
+                        return { ...newItem, subRecipes: oldItem.subRecipes };
+                    }
+                    // For brand new items, generate fresh subrecipes
+                    return getItemsWithSubrecipes([newItem])[0];
+                });
+
+                return {
+                    ...order,
+                    ...editedOrderData,
+                    items: updatedItems,
+                    status: 'Pendiente', // Reset status on edit
+                };
+            }
+            return order;
+        }));
     }
 
     const updateOrderStatus = (orderId: string, status: Order['status']) => {
@@ -118,6 +147,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         orders,
         setOrders,
         addOrder,
+        updateOrder,
         settleOrder,
         updateOrderStatus,
         dishes,

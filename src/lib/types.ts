@@ -2,6 +2,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -80,6 +81,9 @@ export type Cook = {
     items: OrderItem[];
     total: number;
   };
+  
+  export type EditedOrderData = NewOrderData & { id: string };
+
 
   export type FinancialRecord = {
     id: string;

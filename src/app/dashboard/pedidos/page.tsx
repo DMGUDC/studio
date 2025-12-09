@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -17,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText, PlusCircle, Trash, CheckCircle } from "lucide-react";
+import { MoreHorizontal, FileText, PlusCircle, Trash, CheckCircle, Edit, XCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -45,7 +46,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRestaurant } from '@/context/RestaurantContext';
-import type { Order, OrderItem, Dish, NewOrderData } from '@/lib/types';
+import type { Order, OrderItem, NewOrderData, EditedOrderData } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -105,12 +106,27 @@ function OrderDetailsDialog({ order, open, onOpenChange }: { order: Order | null
     )
 }
 
-function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: NewOrderData) => void }) {
+function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: NewOrderData) => void, onUpdate: (order: EditedOrderData) => void, orderToEdit?: Order | null }) {
     const { tables, waiters, dishes } = useRestaurant();
     const [table, setTable] = useState('');
     const [waiter, setWaiter] = useState('');
     const [items, setItems] = useState<OrderItem[]>([]);
     const [selectedDish, setSelectedDish] = useState('');
+
+    useEffect(() => {
+        if(orderToEdit) {
+            setTable(orderToEdit.table);
+            setWaiter(orderToEdit.waiter);
+            setItems(orderToEdit.items);
+        } else {
+            // Reset form when dialog is opened for a new order
+            setTable('');
+            setWaiter('');
+            setItems([]);
+            setSelectedDish('');
+        }
+    }, [orderToEdit, open]);
+
 
     const addItem = () => {
         if (!selectedDish) return;
@@ -135,12 +151,13 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
 
     const handleSave = () => {
         if (table && waiter && items.length > 0) {
-            onSave({ table, waiter, items, total });
-            // Reset form
-            setTable('');
-            setWaiter('');
-            setItems([]);
-            setSelectedDish('');
+            const orderData = { table, waiter, items, total };
+            if (orderToEdit) {
+                onUpdate({ ...orderData, id: orderToEdit.id });
+            } else {
+                onSave(orderData);
+            }
+            onOpenChange(false);
         }
     };
 
@@ -148,8 +165,8 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Nuevo Pedido</DialogTitle>
-                    <DialogDescription>Completa los detalles del nuevo pedido.</DialogDescription>
+                    <DialogTitle>{orderToEdit ? 'Editar Pedido' : 'Nuevo Pedido'}</DialogTitle>
+                    <DialogDescription>Completa los detalles del pedido.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -225,7 +242,7 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
                 </div>
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                    <Button onClick={handleSave}>Guardar Pedido</Button>
+                    <Button onClick={handleSave}>{orderToEdit ? 'Actualizar Pedido' : 'Guardar Pedido'}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -233,8 +250,9 @@ function NewOrderDialog({ open, onOpenChange, onSave }: { open: boolean, onOpenC
 }
 
 export default function PedidosPage() {
-  const { orders, addOrder, updateOrderStatus } = useRestaurant();
+  const { orders, addOrder, updateOrder, updateOrderStatus } = useRestaurant();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
   const [isNewOrderOpen, setNewOrderOpen] = useState(false);
 
@@ -243,13 +261,33 @@ export default function PedidosPage() {
     setDetailsOpen(true);
   }
 
+  const handleOpenNewOrder = () => {
+    setEditingOrder(null);
+    setNewOrderOpen(true);
+  }
+
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+    setNewOrderOpen(true);
+  }
+
   const handleSaveOrder = (newOrderData: NewOrderData) => {
     addOrder(newOrderData);
     setNewOrderOpen(false);
   }
 
+  const handleUpdateOrder = (editedOrderData: EditedOrderData) => {
+    updateOrder(editedOrderData);
+    setNewOrderOpen(false);
+  }
+
   const handleMarkAsDelivered = (orderId: string) => {
     updateOrderStatus(orderId, 'Entregado');
+  }
+
+  const handleCancelOrder = (orderId: string) => {
+    // Maybe add a confirmation dialog here in a real app
+    updateOrderStatus(orderId, 'Cancelado');
   }
 
   return (
@@ -274,7 +312,7 @@ export default function PedidosPage() {
             </div>
             <div className="flex gap-2">
                 <Input placeholder="Buscar pedido..." className="max-w-xs" />
-                <Button onClick={() => setNewOrderOpen(true)}>
+                <Button onClick={handleOpenNewOrder}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Pedido
                 </Button>
             </div>
@@ -297,7 +335,9 @@ export default function PedidosPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
+            {orders.map((order) => {
+              const canModify = order.status === 'Pendiente' || order.status === 'Preparando';
+              return (
               <TableRow 
                 key={order.id}
                 className={cn({ 'glow-listo': order.status === 'Listo' })}
@@ -329,23 +369,35 @@ export default function PedidosPage() {
                         <FileText className="mr-2 h-4 w-4" />
                         Ver Detalles
                       </DropdownMenuItem>
+                       {canModify && (
+                          <DropdownMenuItem onClick={() => handleEditOrder(order)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                          </DropdownMenuItem>
+                       )}
                        {order.status === 'Listo' && (
                         <DropdownMenuItem onClick={() => handleMarkAsDelivered(order.id)}>
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Marcar como Entregado
                         </DropdownMenuItem>
                        )}
+                       {canModify && (
+                          <DropdownMenuItem onClick={() => handleCancelOrder(order.id)} className="text-destructive focus:text-destructive">
+                              <XCircle className="mr-2 h-4 w-4" />
+                              Cancelar
+                          </DropdownMenuItem>
+                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </CardContent>
     </Card>
     <OrderDetailsDialog order={selectedOrder} open={isDetailsOpen} onOpenChange={setDetailsOpen} />
-    <NewOrderDialog open={isNewOrderOpen} onOpenChange={setNewOrderOpen} onSave={handleSaveOrder} />
+    <NewOrderDialog open={isNewOrderOpen} onOpenChange={setNewOrderOpen} onSave={handleSaveOrder} onUpdate={handleUpdateOrder} orderToEdit={editingOrder} />
     </>
   );
 }
