@@ -107,12 +107,13 @@ function OrderDetailsDialog({ order, open, onOpenChange }: { order: Order | null
 }
 
 function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: { open: boolean, onOpenChange: (open: boolean) => void, onSave: (order: NewOrderData) => void, onUpdate: (order: EditedOrderData) => void, orderToEdit?: Order | null }) {
-    const { tables, waiters, dishes } = useRestaurant();
+    const { tables, waiters, dishes, setTableStatus } = useRestaurant();
     const [table, setTable] = useState('');
     const [waiter, setWaiter] = useState('');
     const [items, setItems] = useState<OrderItem[]>([]);
     const [selectedDish, setSelectedDish] = useState('');
     const [people, setPeople] = useState(1);
+    const [originalTable, setOriginalTable] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         if(orderToEdit) {
@@ -120,6 +121,7 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
             setWaiter(orderToEdit.waiter);
             setItems(orderToEdit.items);
             setPeople(orderToEdit.people || 1);
+            setOriginalTable(orderToEdit.table);
         } else {
             // Reset form when dialog is opened for a new order
             setTable('');
@@ -127,6 +129,7 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
             setItems([]);
             setSelectedDish('');
             setPeople(1);
+            setOriginalTable(undefined);
         }
     }, [orderToEdit, open]);
 
@@ -157,6 +160,9 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
             const orderData = { table, waiter, items, total, people };
             if (orderToEdit) {
                 onUpdate({ ...orderData, id: orderToEdit.id });
+                if (originalTable && originalTable !== table) {
+                    setTableStatus(originalTable, 'disponible');
+                }
             } else {
                 onSave(orderData);
             }
@@ -178,7 +184,7 @@ function NewOrderDialog({ open, onOpenChange, onSave, onUpdate, orderToEdit }: {
                             <Select value={table} onValueChange={setTable}>
                                 <SelectTrigger><SelectValue placeholder="Seleccionar mesa..." /></SelectTrigger>
                                 <SelectContent>
-                                    {tables.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                                    {tables.map(t => <SelectItem key={t.id} value={t.name} disabled={t.status === 'ocupada' && t.name !== originalTable}>{t.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -297,14 +303,8 @@ export default function PedidosPage() {
   const handleCancelOrder = (order: Order) => {
     const { adjustedTotal } = calculatePartialCost(order);
     
-    if (adjustedTotal > 0) {
-        // If there's a partial cost, we "settle" the order with that amount
-        // but mark it as canceled. We use 'Otro' as payment method for tracking.
-        updateOrderStatus(order.id, 'Cancelado', adjustedTotal);
-    } else {
-        // If no work was done, just cancel it without financial implications
-        updateOrderStatus(order.id, 'Cancelado');
-    }
+    // Always mark the table as available when cancelling
+    updateOrderStatus(order.id, 'Cancelado', adjustedTotal);
   }
 
   return (

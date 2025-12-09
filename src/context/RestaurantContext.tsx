@@ -82,8 +82,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
 
     const updateOrder = (editedOrderData: EditedOrderData) => {
+        let oldTable: string | undefined;
         setOrders(prevOrders => prevOrders.map(order => {
             if (order.id === editedOrderData.id) {
+                oldTable = order.table;
                 // We keep existing subrecipe status if the item is the same
                 const updatedItems = editedOrderData.items.map(newItem => {
                     const oldItem = order.items.find(old => old.id === newItem.id);
@@ -101,6 +103,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
                     status: 'Pendiente' as const, // Reset status on edit
                     people: editedOrderData.people,
                 };
+                if (oldTable && oldTable !== updatedOrder.table) {
+                    setTableStatus(oldTable, 'disponible');
+                }
                 setTableStatus(updatedOrder.table, 'ocupada', updatedOrder.id, updatedOrder.people);
                 return updatedOrder;
             }
@@ -146,22 +151,28 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         setOrders(prevOrders =>
           prevOrders.map(order => {
               if(order.id === orderId) {
-                  orderToUpdate = order;
-                  return { ...order, status };
+                  orderToUpdate = { ...order, status };
+                  return orderToUpdate;
               }
               return order;
           })
         );
 
-        if (orderToUpdate && finalAmount !== undefined && finalAmount > 0) {
-            const newFinancialRecord: FinancialRecord = {
-                id: `fin-rev-${Date.now()}`,
-                date: new Date(),
-                amount: finalAmount,
-                type: 'revenue',
-                description: `Pedido ${orderId} (${status})`
-            };
-            setFinancials(prev => [...prev, newFinancialRecord]);
+        if (orderToUpdate) {
+            if (status === 'Entregado' || status === 'Cancelado') {
+                setTableStatus(orderToUpdate.table, 'disponible');
+            }
+            
+            if (finalAmount !== undefined && finalAmount > 0) {
+                const newFinancialRecord: FinancialRecord = {
+                    id: `fin-rev-${Date.now()}`,
+                    date: new Date(),
+                    amount: finalAmount,
+                    type: 'revenue',
+                    description: `Pedido ${orderId} (${status})`
+                };
+                setFinancials(prev => [...prev, newFinancialRecord]);
+            }
         }
     };
 
