@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, FileDown, ArrowDownUp, Trash, Edit, MoreHorizontal } from "lucide-react";
+import { PlusCircle, FileDown, ArrowDownUp, Trash, Edit, MoreHorizontal, ShoppingCart } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,6 +42,55 @@ import { useRestaurant } from "@/context/RestaurantContext";
 import type { InventoryItem } from "@/lib/types";
 
 type ProductData = Omit<InventoryItem, 'id'>;
+
+function RestockDialog({ item, onRestock, open, onOpenChange }: { item: InventoryItem | null, onRestock: (itemId: string, quantity: number) => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const [quantity, setQuantity] = useState(0);
+
+    if (!item) return null;
+
+    const totalCost = (quantity * item.price).toFixed(2);
+
+    const handleSave = () => {
+        if (quantity > 0) {
+            onRestock(item.id, quantity);
+            onOpenChange(false);
+            setQuantity(0);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Reabastecer: {item.name}</DialogTitle>
+                    <DialogDescription>
+                        Añade la cantidad de producto que ingresa al inventario. El costo se registrará como un gasto.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="quantity">Cantidad a añadir ({item.unit})</Label>
+                        <Input 
+                            id="quantity" 
+                            type="number" 
+                            value={quantity || ''} 
+                            onChange={e => setQuantity(Number(e.target.value))} 
+                            placeholder="Ej: 10" 
+                        />
+                    </div>
+                     <div className="text-right font-medium">
+                        <p>Costo por unidad: ${item.price.toFixed(2)}</p>
+                        <p className="font-bold text-lg">Costo Total: ${totalCost}</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                    <Button onClick={handleSave}>Confirmar Reabastecimiento</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function ProductForm({ onSave, productToEdit }: { onSave: (product: ProductData) => void; productToEdit?: ProductData | null }) {
     const [product, setProduct] = useState<Partial<ProductData>>(productToEdit || {
@@ -114,12 +163,14 @@ function ProductForm({ onSave, productToEdit }: { onSave: (product: ProductData)
 }
 
 export default function InventarioPage() {
-  const { inventoryItems, setInventoryItems } = useRestaurant();
+  const { inventoryItems, setInventoryItems, restockItem } = useRestaurant();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isProductModalOpen, setProductModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [isRestockModalOpen, setRestockModalOpen] = useState(false);
+  const [restockingItem, setRestockingItem] = useState<InventoryItem | null>(null);
 
   type SortKey = "name" | "category";
 
@@ -156,6 +207,11 @@ export default function InventarioPage() {
   const handleEdit = (item: InventoryItem) => {
     setEditingItem(item);
     setProductModalOpen(true);
+  }
+
+  const handleRestock = (item: InventoryItem) => {
+    setRestockingItem(item);
+    setRestockModalOpen(true);
   }
 
   const handleSaveProduct = (product: ProductData) => {
@@ -272,6 +328,10 @@ export default function InventarioPage() {
                                     <Edit className="mr-2 h-4 w-4" />
                                     <span>Editar</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRestock(item)}>
+                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    <span>Reabastecer</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive focus:text-destructive">
                                     <Trash className="mr-2 h-4 w-4" />
                                     <span>Eliminar</span>
@@ -298,6 +358,7 @@ export default function InventarioPage() {
             <ProductForm onSave={handleSaveProduct} productToEdit={editingItem} />
         </DialogContent>
     </Dialog>
+    <RestockDialog item={restockingItem} onRestock={restockItem} open={isRestockModalOpen} onOpenChange={setRestockModalOpen} />
     </>
   );
 }

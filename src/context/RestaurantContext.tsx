@@ -15,6 +15,7 @@ interface RestaurantContextType {
     setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
     inventoryItems: InventoryItem[];
     setInventoryItems: React.Dispatch<React.SetStateAction<InventoryItem[]>>;
+    restockItem: (itemId: string, quantity: number) => void;
     subRecipes: SubRecipe[];
     setSubRecipes: React.Dispatch<React.SetStateAction<SubRecipe[]>>;
     cooks: Cook[];
@@ -80,11 +81,34 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
         if (settledOrder) {
             const newFinancialRecord: FinancialRecord = {
-                id: `fin${Date.now()}`,
+                id: `fin-rev-${Date.now()}`,
                 date: new Date(),
                 amount: settledOrder.total,
                 type: 'revenue',
                 description: `Pedido ${settledOrder.id}`
+            };
+            setFinancials(prev => [...prev, newFinancialRecord]);
+        }
+    }
+
+    const restockItem = (itemId: string, quantity: number) => {
+        let restockedItem: InventoryItem | undefined;
+        setInventoryItems(prevItems => prevItems.map(item => {
+            if (item.id === itemId) {
+                restockedItem = { ...item, stock: item.stock + quantity };
+                return restockedItem;
+            }
+            return item;
+        }));
+
+        if (restockedItem) {
+            const cost = quantity * restockedItem.price;
+            const newFinancialRecord: FinancialRecord = {
+                id: `fin-exp-${Date.now()}`,
+                date: new Date(),
+                amount: cost,
+                type: 'expense',
+                description: `Reabastecimiento: ${quantity} x ${restockedItem.name}`
             };
             setFinancials(prev => [...prev, newFinancialRecord]);
         }
@@ -100,6 +124,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         setDishes,
         inventoryItems,
         setInventoryItems,
+        restockItem,
         subRecipes,
         setSubRecipes,
         cooks: initialCooks,

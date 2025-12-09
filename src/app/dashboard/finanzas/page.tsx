@@ -27,7 +27,7 @@ import {
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { FinancialRecord } from "@/lib/types";
-import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, format, subMonths, subWeeks, subYears, eachWeekOfInterval, eachMonthOfInterval, lastDayOfWeek, lastDayOfMonth } from 'date-fns';
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, format, subMonths, subWeeks, subYears, eachMonthOfInterval, lastDayOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const chartConfig = {
@@ -36,7 +36,7 @@ const chartConfig = {
     color: "hsl(var(--chart-2))",
   },
   cogs: {
-    label: "COGS",
+    label: "Gastos",
     color: "hsl(var(--chart-5))",
   },
 };
@@ -103,13 +103,13 @@ export default function FinanzasPage() {
 
     const currentPeriodRevenueRecords = filterByDate(financials, startDate, endDate).filter(f => f.type === 'revenue');
     const previousPeriodRevenueRecords = filterByDate(financials, prevStartDate, prevEndDate).filter(f => f.type === 'revenue');
-    
+    const currentPeriodCogsRecords = filterByDate(financials, startDate, endDate).filter(f => f.type === 'expense');
+    const previousPeriodCogsRecords = filterByDate(financials, prevStartDate, prevEndDate).filter(f => f.type === 'expense');
+
     const totalRevenue = sumAmount(currentPeriodRevenueRecords);
     const prevTotalRevenue = sumAmount(previousPeriodRevenueRecords);
-
-    // Dummy COGS and changes for now
-    const totalCogs = totalRevenue * 0.35; // Example
-    const prevTotalCogs = prevTotalRevenue * 0.38; // Example
+    const totalCogs = sumAmount(currentPeriodCogsRecords);
+    const prevTotalCogs = sumAmount(previousPeriodCogsRecords);
 
     const grossProfit = totalRevenue - totalCogs;
     const prevGrossProfit = prevTotalRevenue - prevTotalCogs;
@@ -137,11 +137,14 @@ export default function FinanzasPage() {
             const dailyRevenue = filterByDate(financials, new Date(dayStart), new Date(dayEnd))
                 .filter(f => f.type === 'revenue')
                 .reduce((sum, item) => sum + item.amount, 0);
+            const dailyCogs = filterByDate(financials, new Date(dayStart), new Date(dayEnd))
+                .filter(f => f.type === 'expense')
+                .reduce((sum, item) => sum + item.amount, 0);
             
             return {
                 date: format(day, 'yyyy-MM-dd'),
                 revenue: dailyRevenue,
-                cogs: dailyRevenue * 0.35, // Example COGS
+                cogs: dailyCogs,
             };
         });
     } else if (intervalType === 'month') {
@@ -151,11 +154,14 @@ export default function FinanzasPage() {
             const monthlyRevenue = filterByDate(financials, monthStart, monthEnd)
                 .filter(f => f.type === 'revenue')
                 .reduce((sum, item) => sum + item.amount, 0);
+            const monthlyCogs = filterByDate(financials, monthStart, monthEnd)
+                .filter(f => f.type === 'expense')
+                .reduce((sum, item) => sum + item.amount, 0);
             
             return {
                 date: format(monthStart, 'yyyy-MM-dd'),
                 revenue: monthlyRevenue,
-                cogs: monthlyRevenue * 0.35, // Example COGS
+                cogs: monthlyCogs,
             };
         });
     }
@@ -223,7 +229,7 @@ const formatMarginChange = (change: number) => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Costo de Bienes (COGS)</CardTitle>
+            <CardTitle className="text-sm font-medium">Costos y Gastos</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -255,7 +261,7 @@ const formatMarginChange = (change: number) => {
       
       <Card>
         <CardHeader>
-            <CardTitle>Evolución de Ingresos vs COGS</CardTitle>
+            <CardTitle>Evolución de Ingresos vs Gastos</CardTitle>
             <CardDescription>Análisis del período seleccionado.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -307,7 +313,7 @@ const formatMarginChange = (change: number) => {
                         fill="var(--color-cogs)"
                         fillOpacity={0.4}
                         stroke="var(--color-cogs)"
-                        stackId="a"
+                        stackId="b"
                     />
                 </AreaChart>
             </ChartContainer>

@@ -78,15 +78,19 @@ export default function DashboardPage() {
     financials.forEach(record => {
       const monthIndex = getMonth(record.date);
       const currentMonth = getMonth(new Date());
+      // This logic is a bit complex to handle year boundaries correctly
       const monthDiff = (currentMonth - monthIndex + 12) % 12;
-
-      if(monthDiff < 6) {
+      const recordYear = record.date.getFullYear();
+      const currentYear = new Date().getFullYear();
+      
+      // Only include records from the last 6 months, considering year change
+      if ((currentYear === recordYear && monthDiff < 6) || (currentYear - 1 === recordYear && monthDiff >= 6)) {
           const monthName = format(record.date, 'MMMM', { locale: es });
           const monthEntry = monthlyData.find(m => m.month === monthName);
           if (monthEntry) {
             if (record.type === 'revenue') {
               monthEntry.ingresos += record.amount;
-            } else {
+            } else { // 'expense'
               monthEntry.gastos += record.amount;
             }
           }
@@ -169,7 +173,7 @@ export default function DashboardPage() {
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
+                  tickFormatter={(value) => value.charAt(0).toUpperCase() + value.slice(1, 3)}
                 />
                  <YAxis
                   tickLine={false}
