@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label";
-import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, Clock } from "lucide-react"
+import { PlusCircle, MoreHorizontal, ChefHat, Utensils, Trash, Edit, Clock, Package } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,19 +49,43 @@ const initialDishes = [
   { id: "d5", name: "Papas Fritas", category: "Acompañamientos", price: 4.00, subRecipeIds: ["sr12"] },
 ]
 
+const initialInventoryItems = [
+    { id: "inv1", name: "Tomates", unit: "kg" },
+    { id: "inv2", name: "Pechuga de Pollo", unit: "kg" },
+    { id: "inv3", name: "Queso Mozzarella", unit: "kg" },
+    { id: "inv4", name: "Harina de Trigo", unit: "kg" },
+    { id: "inv5", name: "Aceite de Oliva", unit: "litros" },
+    { id: "inv6", name: "Vino Tinto", unit: "botellas" },
+    { id: "inv7", name: "Servilletas", unit: "paquetes" },
+    { id: "inv8", name: "Sal", unit: "kg" },
+    { id: "inv9", name: "Levadura", unit: "g" },
+    { id: "inv10", name: "Salsa de tomate", unit: "litros"},
+    { id: "inv11", name: "Lechuga Romana", unit: "unidades"},
+    { id: "inv12", name: "Yemas de huevo", unit: "unidades"},
+    { id: "inv13", name: "Anchoas", unit: "latas"},
+    { id: "inv14", name: "Ajo", unit: "cabezas"},
+    { id: "inv15", name: "Mostaza", unit: "g"},
+    { id: "inv16", name: "Pasta", unit: "kg"},
+    { id: "inv17", name: "Panceta", unit: "kg"},
+    { id: "inv18", name: "Queso Pecorino", unit: "kg"},
+    { id: "inv19", name: "Carne de res", unit: "kg"},
+    { id: "inv20", name: "Pan de hamburguesa", unit: "unidades"},
+    { id: "inv21", name: "Papas", unit: "kg"},
+];
+
 const initialSubRecipes = [
-    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10 },
-    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5 },
-    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", prepTime: 15 },
-    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5 },
-    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7 },
-    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12 },
-    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5 },
-    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4 },
-    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", prepTime: 2 },
-    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8 },
-    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3 },
-    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10 },
+    { id: "sr1", name: "Preparar masa", description: "Mezclar harina, agua, levadura y sal. Amasar durante 10 minutos.", prepTime: 10, ingredients: [{inventoryId: "inv4", quantity: 0.5}, {inventoryId: "inv9", quantity: 10}, {inventoryId: "inv8", quantity: 0.02}] },
+    { id: "sr2", name: "Añadir salsa y queso", description: "Extender la salsa de tomate sobre la masa y espolvorear mozzarella rallada.", prepTime: 5, ingredients: [{inventoryId: "inv10", quantity: 0.1}, {inventoryId: "inv3", quantity: 0.2}] },
+    { id: "sr3", name: "Hornear", description: "Hornear a 220°C durante 15 minutos o hasta que esté dorada.", prepTime: 15, ingredients: [] },
+    { id: "sr4", name: "Lavar y cortar lechuga", description: "Lavar la lechuga romana y cortarla en trozos grandes.", prepTime: 5, ingredients: [{inventoryId: "inv11", quantity: 1}] },
+    { id: "sr5", name: "Preparar aderezo", description: "Mezclar yemas de huevo, anchoas, ajo, mostaza y aceite.", prepTime: 7, ingredients: [{inventoryId: "inv12", quantity: 2}, {inventoryId: "inv13", quantity: 0.5}, {inventoryId: "inv14", quantity: 0.25}, {inventoryId: "inv15", quantity: 10}, {inventoryId: "inv5", quantity: 0.1}] },
+    { id: "sr6", name: "Hervir pasta", description: "Cocinar la pasta al dente según las instrucciones del paquete.", prepTime: 12, ingredients: [{inventoryId: "inv16", quantity: 0.2}] },
+    { id: "sr7", name: "Saltear panceta", description: "Cortar y saltear la panceta hasta que esté crujiente.", prepTime: 5, ingredients: [{inventoryId: "inv17", quantity: 0.1}] },
+    { id: "sr8", name: "Mezclar salsa", description: "Batir huevos y queso Pecorino. Mezclar con la panceta y la pasta caliente.", prepTime: 4, ingredients: [{inventoryId: "inv12", quantity: 2}, {inventoryId: "inv18", quantity: 0.05}] },
+    { id: "sr9", name: "Emplatar", description: "Servir inmediatamente con pimienta negra recién molida.", prepTime: 2, ingredients: [] },
+    { id: "sr10", name: "Cocinar carne", description: "Formar la hamburguesa y cocinarla al punto deseado.", prepTime: 8, ingredients: [{inventoryId: "inv19", quantity: 0.25}] },
+    { id: "sr11", name: "Montar hamburguesa", description: "Colocar la carne en el pan con lechuga, tomate y salsas.", prepTime: 3, ingredients: [{inventoryId: "inv20", quantity: 1}, {inventoryId: "inv11", quantity: 0.1}, {inventoryId: "inv1", quantity: 0.1}] },
+    { id: "sr12", name: "Freír papas", description: "Freír las papas en aceite caliente hasta que estén doradas y crujientes.", prepTime: 10, ingredients: [{inventoryId: "inv21", quantity: 0.3}] },
 ]
 
 type Dish = {
@@ -72,38 +96,98 @@ type Dish = {
     subRecipeIds: string[];
 }
 
+type Ingredient = {
+    inventoryId: string;
+    quantity: number;
+}
+
 type SubRecipe = {
     id: string;
     name: string;
     description: string;
     prepTime: number; // in minutes
+    ingredients: Ingredient[];
 }
 
 function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id'>) => void; subRecipe?: SubRecipe | null }) {
     const [name, setName] = useState(subRecipe?.name || "");
     const [description, setDescription] = useState(subRecipe?.description || "");
     const [prepTime, setPrepTime] = useState(subRecipe?.prepTime || 0);
+    const [ingredients, setIngredients] = useState<Ingredient[]>(subRecipe?.ingredients || []);
 
     const handleSave = () => {
         if(name && description && prepTime > 0) {
-            onSave({ name, description, prepTime });
+            onSave({ name, description, prepTime, ingredients });
         }
     }
 
+    const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number) => {
+        const newIngredients = [...ingredients];
+        if (field === 'quantity') {
+            newIngredients[index][field] = Number(value);
+        } else {
+            newIngredients[index][field] = value as string;
+        }
+        setIngredients(newIngredients);
+    }
+    
+    const addIngredient = () => {
+        setIngredients([...ingredients, { inventoryId: '', quantity: 0 }]);
+    }
+
+    const removeIngredient = (index: number) => {
+        setIngredients(ingredients.filter((_, i) => i !== index));
+    }
+
+
     return (
         <div className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="sub-recipe-name">Nombre de la Sub-receta</Label>
-                <Input id="sub-recipe-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Cortar vegetales"/>
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="sub-recipe-time">Tiempo Estimado (min)</Label>
-                <Input id="sub-recipe-time" type="number" value={prepTime} onChange={e => setPrepTime(Number(e.target.value))} placeholder="Ej: 5"/>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="sub-recipe-name">Nombre de la Sub-receta</Label>
+                    <Input id="sub-recipe-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Cortar vegetales"/>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="sub-recipe-time">Tiempo Estimado (min)</Label>
+                    <Input id="sub-recipe-time" type="number" value={prepTime} onChange={e => setPrepTime(Number(e.target.value))} placeholder="Ej: 5"/>
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="sub-recipe-description">Descripción de la Preparación</Label>
                 <Textarea id="sub-recipe-description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ej: Cortar en juliana fina."/>
             </div>
+
+            <div className="space-y-2">
+                <Label>Ingredientes</Label>
+                <div className="space-y-2 rounded-md border p-4">
+                {ingredients.map((ing, index) => (
+                    <div key={index} className="grid grid-cols-3 items-center gap-2">
+                         <select
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={ing.inventoryId}
+                            onChange={(e) => handleIngredientChange(index, 'inventoryId', e.target.value)}
+                        >
+                            <option value="" disabled>Seleccionar ingrediente</option>
+                            {initialInventoryItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                        </select>
+
+                        <Input 
+                            type="number" 
+                            placeholder="Cantidad"
+                            value={ing.quantity}
+                            onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => removeIngredient(index)}>
+                            <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                ))}
+                 <Button variant="outline" size="sm" onClick={addIngredient} className="mt-2">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Añadir Ingrediente
+                </Button>
+                </div>
+            </div>
+
             <DialogFooter>
                 <DialogClose asChild>
                     <Button variant="outline">Cancelar</Button>
@@ -317,7 +401,7 @@ export default function MenuPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Gestión de Sub-Recetas</CardTitle>
-                <CardDescription>Define los pasos de preparación para cada platillo.</CardDescription>
+                <CardDescription>Define los pasos de preparación y los ingredientes para cada platillo.</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Input placeholder="Buscar sub-receta..." className="max-w-xs" />
@@ -329,8 +413,8 @@ export default function MenuPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[30%]">Nombre de Sub-Receta</TableHead>
-                  <TableHead>Descripción</TableHead>
+                  <TableHead>Nombre de Sub-Receta</TableHead>
+                  <TableHead>Ingredientes</TableHead>
                   <TableHead>Tiempo (min)</TableHead>
                   <TableHead>Asignada a Platillo(s)</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
@@ -342,7 +426,12 @@ export default function MenuPage() {
                     return (
                         <TableRow key={sr.id}>
                             <TableCell className="font-medium">{sr.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{sr.description}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Package className="h-4 w-4" />
+                                    {sr.ingredients.length}
+                                </div>
+                            </TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-1 text-muted-foreground">
                                     <Clock className="h-3 w-3" />
@@ -383,11 +472,11 @@ export default function MenuPage() {
     </Dialog>
     
     <Dialog open={isSubRecipeModalOpen} onOpenChange={setSubRecipeModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>{editingSubRecipe ? 'Editar Sub-receta' : 'Nueva Sub-receta'}</DialogTitle>
                  <DialogDescription>
-                    Añade los detalles y el tiempo de preparación para esta sub-receta.
+                    Añade los detalles, el tiempo de preparación y los ingredientes para esta sub-receta.
                 </DialogDescription>
             </DialogHeader>
             <SubRecipeForm onSave={handleSaveSubRecipe} subRecipe={editingSubRecipe} />
