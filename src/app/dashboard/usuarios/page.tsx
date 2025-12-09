@@ -47,7 +47,7 @@ import {
     SelectValue,
   } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
-import type { User, UserRole } from '@/lib/types';
+import type { User } from '@/lib/types';
 
 
 const allPermissions = [
@@ -61,12 +61,13 @@ const allPermissions = [
     { id: "/dashboard/usuarios", label: "Usuarios", icon: Users },
 ];
 
-type UserFormData = Omit<User, 'id' | 'role'>;
+type UserFormData = Omit<User, 'id'>;
 
-function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void; userToEdit?: Omit<User, 'id' | 'role'> | null }) {
+function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void; userToEdit?: Omit<User, 'id'> | null }) {
     const [user, setUser] = useState<Partial<UserFormData>>(userToEdit || {
         name: '',
         email: '',
+        role: '',
         status: 'Activo',
         permissions: []
     });
@@ -112,6 +113,10 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="role">Cargo</Label>
+                    <Input id="role" name="role" value={user.role} onChange={handleInputChange} placeholder="Ej: Gerente de Turno" />
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
                     <Select value={user.status} onValueChange={(value) => handleSelectChange('status', value)}>
@@ -150,12 +155,6 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
     );
 }
 
-const roleVariant: { [key: string]: "default" | "secondary" | "outline" } = {
-    Gerente: "default",
-    Mesero: "secondary",
-    Cocinero: "outline"
-}
-
 export default function UsuariosPage() {
   const { users, setUsers } = useAuth();
   const [isModalOpen, setModalOpen] = useState(false);
@@ -173,11 +172,10 @@ export default function UsuariosPage() {
 
   const handleSaveUser = (userData: UserFormData) => {
     if(editingUser) {
-        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData, role: 'Mesero' } : u));
+        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData } : u));
     } else {
         const newUser: User = {
             id: `usr${Date.now()}`,
-            role: 'Mesero', // Default role, permissions handle access
             ...userData
         };
         setUsers(prev => [...prev, newUser]);
@@ -216,6 +214,7 @@ export default function UsuariosPage() {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Cargo</TableHead>
               <TableHead>Permisos</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>
@@ -228,6 +227,7 @@ export default function UsuariosPage() {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
                   <TableCell>
                       <Badge variant={'secondary'}>{user.permissions.length} Permisos</Badge>
                   </TableCell>

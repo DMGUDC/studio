@@ -4,6 +4,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -101,14 +102,12 @@ export type Cook = {
     type: 'revenue' | 'expense';
     description: string;
   }
-
-  export type UserRole = "Gerente" | "Mesero" | "Cocinero";
-
+  
   export type User = {
     id: string;
     name: string;
     email: string;
-    role: UserRole;
+    role: string;
     status: "Activo" | "Inactivo";
     permissions: string[];
   }
