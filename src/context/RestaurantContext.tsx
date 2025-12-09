@@ -10,7 +10,7 @@ interface RestaurantContextType {
     setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
     addOrder: (newOrderData: NewOrderData) => void;
     updateOrder: (editedOrderData: EditedOrderData) => void;
-    settleOrder: (orderId: string, paymentMethod: PaymentMethod) => void;
+    settleOrder: (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => void;
     updateOrderStatus: (orderId: string, status: Order['status']) => void;
     dishes: Dish[];
     setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
@@ -98,11 +98,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         );
       };
 
-    const settleOrder = (orderId: string, paymentMethod: PaymentMethod) => {
+    const settleOrder = (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => {
         let settledOrder: Order | undefined;
         setOrders(prevOrders => prevOrders.map(order => {
             if (order.id === orderId) {
-                settledOrder = { ...order, status: 'Entregado', paymentMethod };
+                settledOrder = { ...order, status: 'Entregado', paymentMethod, total: finalAmount };
                 return settledOrder;
             }
             return order;
@@ -112,7 +112,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             const newFinancialRecord: FinancialRecord = {
                 id: `fin-rev-${Date.now()}`,
                 date: new Date(),
-                amount: settledOrder.total,
+                amount: finalAmount,
                 type: 'revenue',
                 description: `Pedido ${settledOrder.id}`
             };

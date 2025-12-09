@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, DragEvent } from "react";
+import { useState, useRef, DragEvent, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Edit, PlusCircle, Users, Save, X, Square, Circle, CreditCard, Wallet, Landmark } from "lucide-react";
@@ -70,13 +70,57 @@ const shapeStyles = {
     round: "w-24 h-24 rounded-full",
 }
 
-function TableDetailsDialog({ table, order, open, onOpenChange, onSettle }: { table: Table | null, order: Order | null, open: boolean, onOpenChange: (open: boolean) => void, onSettle: (orderId: string, paymentMethod: PaymentMethod) => void }) {
+function TableDetailsDialog({ table, order, open, onOpenChange, onSettle }: { table: Table | null, order: Order | null, open: boolean, onOpenChange: (open: boolean) => void, onSettle: (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => void }) {
     const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+    const { inventoryItems, dishes } = useRestaurant();
     
+    const { adjustedTotal, isPartial } = useMemo(() => {
+        if (!order) return { adjustedTotal: 0, isPartial: false };
+
+        const allSubrecipesDone = order.items.every(item => item.subRecipes.every(sr => sr.status === 'Listo'));
+        if (allSubrecipesDone) {
+            return { adjustedTotal: order.total, isPartial: false };
+        }
+
+        let partialCost = 0;
+        order.items.forEach(item => {
+            const dish = dishes.find(d => d.id === item.id);
+            if (!dish) return;
+
+            const completedSubRecipes = item.subRecipes.filter(sr => sr.status === 'Listo');
+            if (completedSubRecipes.length === 0 && item.subRecipes.length > 0) return;
+            if (item.subRecipes.length === 0) { // Item has no subrecipes (e.g. a drink)
+                partialCost += item.price * item.quantity;
+                return;
+            }
+            if(completedSubRecipes.length === item.subRecipes.length) { // All sub-recipes for this item are done
+                partialCost += item.price * item.quantity;
+                return;
+            }
+
+            // Calculate cost of ingredients for completed sub-recipes only
+            let ingredientCost = 0;
+            completedSubRecipes.forEach(sr => {
+                sr.ingredients.forEach(ing => {
+                    const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
+                    if (invItem) {
+                        const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
+                        ingredientCost += rawQuantity * invItem.price;
+                    }
+                });
+            });
+            // We'll charge 3x the ingredient cost for partially completed items as a simple heuristic
+            partialCost += ingredientCost * 3 * item.quantity; 
+        });
+
+        return { adjustedTotal: partialCost, isPartial: true };
+    }, [order, dishes, inventoryItems]);
+
+
     if (!table || !order) return null;
 
     const handleSettle = (method: PaymentMethod) => {
-        onSettle(order.id, method);
+        onSettle(order.id, method, adjustedTotal);
         onOpenChange(false);
         setShowPaymentOptions(false);
     }
@@ -107,7 +151,10 @@ function TableDetailsDialog({ table, order, open, onOpenChange, onSettle }: { ta
                             ))}
                         </TableBody>
                     </UiTable>
-                    <div className="text-right font-bold text-lg pr-4">Total: ${order.total.toFixed(2)}</div>
+                    <div className="text-right font-bold text-lg pr-4 space-y-1">
+                        {isPartial && <p className="text-sm font-normal text-muted-foreground line-through">Total Original: ${order.total.toFixed(2)}</p>}
+                        <p>Total {isPartial && 'Ajustado'}: ${adjustedTotal.toFixed(2)}</p>
+                    </div>
                 </div>
                 <DialogFooter>
                     {showPaymentOptions ? (
@@ -135,7 +182,7 @@ export default function MesasPage() {
   const [isEditing, setIsEditing] = useState(false);
   const dragInfo = useRef<{ tableId: number; offsetX: number; offsetY: number } | null>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [originalFloors, setOriginalFloors] = useState<Floors>(initialFloors);
+  const [originalFloors, setOriginalFloors] = useState<Floors>(JSON.parse(JSON.stringify(initialFloors)));
 
   const { orders, settleOrder } = useRestaurant();
   const [isDetailsOpen, setDetailsOpen] = useState(false);
@@ -167,19 +214,21 @@ export default function MesasPage() {
     }
   }
 
-  const handleSettleTable = (orderId: string, paymentMethod: PaymentMethod) => {
-    settleOrder(orderId, paymentMethod);
+  const handleSettleTable = (orderId: string, paymentMethod: PaymentMethod, finalAmount: number) => {
+    settleOrder(orderId, paymentMethod, finalAmount);
     // Update table status in the local state of this component
     setFloors(prevFloors => {
-        const newFloors = { ...prevFloors };
-        const tables = newFloors[selectedFloor].tables.map(table => {
-            if (table.orderId === orderId) {
-                const { orderId: oid, people, ...rest } = table;
-                return { ...rest, status: 'disponible' as const };
-            }
-            return table;
-        });
-        newFloors[selectedFloor] = { ...newFloors[selectedFloor], tables };
+        const newFloors = JSON.parse(JSON.stringify(prevFloors));
+        for (const floorKey in newFloors) {
+            const tables = newFloors[floorKey].tables.map((table: Table) => {
+                if (table.orderId === orderId) {
+                    const { orderId: oid, people, ...rest } = table;
+                    return { ...rest, status: 'disponible' as const };
+                }
+                return table;
+            });
+            newFloors[floorKey].tables = tables;
+        }
         return newFloors;
     });
   }
@@ -356,5 +405,3 @@ export default function MesasPage() {
     </div>
   );
 }
-
-    
