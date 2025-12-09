@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -25,36 +26,86 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { Bar, BarChart as BarChartComponent, ResponsiveContainer, XAxis, YAxis } from "recharts";
-
-const chartData = [
-  { month: "Enero", desktop: 186, mobile: 80 },
-  { month: "Febrero", desktop: 305, mobile: 200 },
-  { month: "Marzo", desktop: 237, mobile: 120 },
-  { month: "Abril", desktop: 73, mobile: 190 },
-  { month: "Mayo", desktop: 209, mobile: 130 },
-  { month: "Junio", desktop: 214, mobile: 140 },
-];
+import { Bar, BarChart as BarChartComponent } from "recharts";
+import { useRestaurant } from "@/context/RestaurantContext";
+import { useMemo } from "react";
+import { isToday, getMonth, format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const chartConfig = {
-  desktop: {
+  ingresos: {
     label: "Ingresos",
     color: "hsl(var(--primary))",
   },
-  mobile: {
+  gastos: {
     label: "Gastos",
     color: "hsl(var(--destructive))",
   },
 };
 
-const recentOrders = [
-  { id: "#3210", status: "Listo", total: "$42.50", table: "Mesa 5" },
-  { id: "#3209", status: "Preparando", total: "$89.90", table: "Mesa 2" },
-  { id: "#3208", status: "Entregado", total: "$12.00", table: "Terraza 1" },
-  { id: "#3207", status: "Pendiente", total: "$30.00", table: "Mesa 8" },
-];
+const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
+  Entregado: "outline",
+  Preparando: "secondary",
+  Listo: "default",
+  Pendiente: "destructive",
+  Cancelado: "destructive",
+};
+
 
 export default function DashboardPage() {
+  const { orders, financials } = useRestaurant();
+
+  const dashboardStats = useMemo(() => {
+    const todayRevenue = financials
+      .filter(f => f.type === 'revenue' && isToday(f.date))
+      .reduce((sum, item) => sum + item.amount, 0);
+
+    const activeOrders = orders.filter(o => o.status === 'Pendiente' || o.status === 'Preparando');
+    const pendingOrdersCount = activeOrders.filter(o => o.status === 'Pendiente').length;
+    const preparingOrdersCount = activeOrders.filter(o => o.status === 'Preparando').length;
+
+    const uniqueTables = new Set(activeOrders.map(o => o.table));
+    const activeCustomers = uniqueTables.size; // A simplified proxy for active customers
+
+    const recentOrders = orders.slice(0, 4);
+
+    const monthlyData = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        return { month: format(d, 'MMMM', { locale: es }), ingresos: 0, gastos: 0 };
+      }).reverse();
+
+    financials.forEach(record => {
+      const monthIndex = getMonth(record.date);
+      const currentMonth = getMonth(new Date());
+      const monthDiff = (currentMonth - monthIndex + 12) % 12;
+
+      if(monthDiff < 6) {
+          const monthName = format(record.date, 'MMMM', { locale: es });
+          const monthEntry = monthlyData.find(m => m.month === monthName);
+          if (monthEntry) {
+            if (record.type === 'revenue') {
+              monthEntry.ingresos += record.amount;
+            } else {
+              monthEntry.gastos += record.amount;
+            }
+          }
+      }
+    });
+
+
+    return {
+      todayRevenue,
+      activeCustomers,
+      activeOrdersCount: activeOrders.length,
+      pendingOrdersCount,
+      preparingOrdersCount,
+      recentOrders,
+      chartData: monthlyData,
+    };
+  }, [orders, financials]);
+
+
   return (
     <div className="grid gap-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -64,18 +115,18 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$4,291.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% desde ayer</p>
+            <div className="text-2xl font-bold">${dashboardStats.todayRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Actualizado en tiempo real</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Mesas Activas</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">3 mesas ocupadas</p>
+            <div className="text-2xl font-bold">{dashboardStats.activeCustomers}</div>
+            <p className="text-xs text-muted-foreground">Mesas con pedidos activos</p>
           </CardContent>
         </Card>
         <Card>
@@ -84,8 +135,10 @@ export default function DashboardPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12</div>
-            <p className="text-xs text-muted-foreground">5 pendientes, 7 preparando</p>
+            <div className="text-2xl font-bold">+{dashboardStats.activeOrdersCount}</div>
+            <p className="text-xs text-muted-foreground">
+                {dashboardStats.pendingOrdersCount} pendientes, {dashboardStats.preparingOrdersCount} preparando
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -95,7 +148,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">98%</div>
-            <p className="text-xs text-muted-foreground">Eficiencia del último turno</p>
+            <p className="text-xs text-muted-foreground">Eficiencia del último turno (demo)</p>
           </CardContent>
         </Card>
       </div>
@@ -110,7 +163,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pl-2">
              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChartComponent data={chartData} accessibilityLayer>
+              <BarChartComponent data={dashboardStats.chartData} accessibilityLayer>
                 <XAxis
                   dataKey="month"
                   tickLine={false}
@@ -122,15 +175,15 @@ export default function DashboardPage() {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={10}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => `$${value/1000}k`}
                 />
                 <ChartTooltip
                   cursor={false}
                   content={<ChartTooltipContent indicator="dot" />}
                 />
                  <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                <Bar dataKey="mobile" fill="var(--color-mobile)" radius={4} />
+                <Bar dataKey="ingresos" fill="var(--color-ingresos)" radius={4} />
+                <Bar dataKey="gastos" fill="var(--color-gastos)" radius={4} />
               </BarChartComponent>
             </ChartContainer>
           </CardContent>
@@ -154,25 +207,19 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.map((order) => (
+                {dashboardStats.recentOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.id}</TableCell>
                     <TableCell>{order.table}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          order.status === "Listo"
-                            ? "default"
-                            : order.status === "Preparando"
-                            ? "secondary"
-                            : order.status === "Entregado" ? "outline" : "destructive"
-                        }
+                        variant={statusVariant[order.status] || 'default'}
                         className={order.status === "Listo" ? "bg-green-500 text-white" : ""}
                       >
                         {order.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{order.total}</TableCell>
+                    <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -183,3 +230,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

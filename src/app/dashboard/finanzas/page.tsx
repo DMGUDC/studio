@@ -27,7 +27,7 @@ import {
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { FinancialRecord } from "@/lib/types";
-import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, format, subMonths, subWeeks, subYears } from 'date-fns';
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, format, subMonths, subWeeks, subYears, eachWeekOfInterval, eachMonthOfInterval, lastDayOfWeek, lastDayOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const chartConfig = {
@@ -43,7 +43,7 @@ const chartConfig = {
 
 export default function FinanzasPage() {
   const [range, setRange] = useState("this_month");
-  const { financials, inventoryItems } = useRestaurant();
+  const { financials } = useRestaurant();
 
   const {
     totalRevenue,
@@ -59,25 +59,29 @@ export default function FinanzasPage() {
     const now = new Date();
     let startDate: Date, endDate: Date;
     let prevStartDate: Date, prevEndDate: Date;
+    let intervalType: 'day' | 'week' | 'month' = 'day';
 
     switch(range) {
         case 'today':
             startDate = new Date(now.setHours(0, 0, 0, 0));
             endDate = new Date(now.setHours(23, 59, 59, 999));
-            prevStartDate = new Date(new Date().setDate(now.getDate() - 1));
-            prevEndDate = new Date(new Date().setDate(now.getDate() - 1));
+            prevStartDate = subWeeks(startDate, 1); // Compare to same day last week
+            prevEndDate = subWeeks(endDate, 1);
+            intervalType = 'day';
             break;
         case 'this_week':
-            startDate = startOfWeek(now);
-            endDate = endOfWeek(now);
+            startDate = startOfWeek(now, { weekStartsOn: 1 });
+            endDate = endOfWeek(now, { weekStartsOn: 1 });
             prevStartDate = subWeeks(startDate, 1);
             prevEndDate = subWeeks(endDate, 1);
+            intervalType = 'day';
             break;
         case 'this_year':
             startDate = startOfYear(now);
             endDate = endOfYear(now);
             prevStartDate = subYears(startDate, 1);
             prevEndDate = subYears(endDate, 1);
+            intervalType = 'month';
             break;
         case 'this_month':
         default:
@@ -85,6 +89,7 @@ export default function FinanzasPage() {
             endDate = endOfMonth(now);
             prevStartDate = subMonths(startDate, 1);
             prevEndDate = subMonths(endDate, 1);
+            intervalType = 'day';
             break;
     }
 
@@ -93,12 +98,14 @@ export default function FinanzasPage() {
             const itemDate = new Date(item.date);
             return itemDate >= start && itemDate <= end;
         });
+    
+    const sumAmount = (records: FinancialRecord[]) => records.reduce((sum, item) => sum + item.amount, 0);
 
     const currentPeriodRevenueRecords = filterByDate(financials, startDate, endDate).filter(f => f.type === 'revenue');
     const previousPeriodRevenueRecords = filterByDate(financials, prevStartDate, prevEndDate).filter(f => f.type === 'revenue');
-
-    const totalRevenue = currentPeriodRevenueRecords.reduce((sum, item) => sum + item.amount, 0);
-    const prevTotalRevenue = previousPeriodRevenueRecords.reduce((sum, item) => sum + item.amount, 0);
+    
+    const totalRevenue = sumAmount(currentPeriodRevenueRecords);
+    const prevTotalRevenue = sumAmount(previousPeriodRevenueRecords);
 
     // Dummy COGS and changes for now
     const totalCogs = totalRevenue * 0.35; // Example
@@ -120,19 +127,39 @@ export default function FinanzasPage() {
     const profitChange = calculateChange(grossProfit, prevGrossProfit);
     const marginChange = profitMargin - prevProfitMargin;
 
-    // Generate chart data by day for the selected range
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
-    const chartData = days.map(day => {
-        const dailyRevenue = filterByDate(financials, day, new Date(day).setHours(23, 59, 59, 999))
-            .filter(f => f.type === 'revenue')
-            .reduce((sum, item) => sum + item.amount, 0);
-        
-        return {
-            date: format(day, 'yyyy-MM-dd'),
-            revenue: dailyRevenue,
-            cogs: dailyRevenue * 0.35, // Example COGS
-        };
-    });
+    let chartData: { date: string, revenue: number, cogs: number }[] = [];
+
+    if (intervalType === 'day') {
+        const days = eachDayOfInterval({ start: startDate, end: endDate });
+        chartData = days.map(day => {
+            const dayStart = new Date(day).setHours(0,0,0,0);
+            const dayEnd = new Date(day).setHours(23,59,59,999);
+            const dailyRevenue = filterByDate(financials, new Date(dayStart), new Date(dayEnd))
+                .filter(f => f.type === 'revenue')
+                .reduce((sum, item) => sum + item.amount, 0);
+            
+            return {
+                date: format(day, 'yyyy-MM-dd'),
+                revenue: dailyRevenue,
+                cogs: dailyRevenue * 0.35, // Example COGS
+            };
+        });
+    } else if (intervalType === 'month') {
+        const months = eachMonthOfInterval({ start: startDate, end: endDate });
+        chartData = months.map(monthStart => {
+            const monthEnd = lastDayOfMonth(monthStart);
+            const monthlyRevenue = filterByDate(financials, monthStart, monthEnd)
+                .filter(f => f.type === 'revenue')
+                .reduce((sum, item) => sum + item.amount, 0);
+            
+            return {
+                date: format(monthStart, 'yyyy-MM-dd'),
+                revenue: monthlyRevenue,
+                cogs: monthlyRevenue * 0.35, // Example COGS
+            };
+        });
+    }
+
 
     return {
         totalRevenue,
@@ -249,8 +276,10 @@ const formatMarginChange = (change: number) => {
                         tickMargin={8}
                         tickFormatter={(value) => {
                             const date = new Date(value);
+                            // Adjust date because of timezone issues with chart
+                            const adjustedDate = new Date(date.valueOf() + date.getTimezoneOffset() * 60 * 1000);
                             const formatStyle = range === 'this_year' ? 'MMM' : 'dd/MMM';
-                            return format(date, formatStyle, { locale: es });
+                            return format(adjustedDate, formatStyle, { locale: es });
                         }}
                     />
                     <YAxis
@@ -287,3 +316,5 @@ const formatMarginChange = (change: number) => {
     </div>
   );
 }
+
+    
