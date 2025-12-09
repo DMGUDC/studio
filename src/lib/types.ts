@@ -1,4 +1,5 @@
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -23,6 +24,8 @@ export type Cook = {
     subRecipeIds: string[];
     subRecipes: SubRecipe[];
   };
+
+  export type PaymentMethod = "Efectivo" | "Tarjeta" | "Otro";
   
   export type Order = {
     id: string;
@@ -33,6 +36,7 @@ export type Cook = {
     timestamp: string;
     createdAt: number;
     items: OrderItem[];
+    paymentMethod?: PaymentMethod;
   };
   
   export type Dish = {
@@ -75,4 +79,12 @@ export type Cook = {
     items: OrderItem[];
     total: number;
   };
+
+  export type FinancialRecord = {
+    id: string;
+    date: Date;
+    amount: number;
+    type: 'revenue' | 'expense';
+    description: string;
+  }
 

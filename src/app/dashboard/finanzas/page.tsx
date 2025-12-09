@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -24,16 +25,10 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-
-const chartData = [
-  { date: "2024-01-01", revenue: 4000, cogs: 2400 },
-  { date: "2024-02-01", revenue: 3000, cogs: 1398 },
-  { date: "2024-03-01", revenue: 2000, cogs: 9800 },
-  { date: "2024-04-01", revenue: 2780, cogs: 3908 },
-  { date: "2024-05-01", revenue: 1890, cogs: 4800 },
-  { date: "2024-06-01", revenue: 2390, cogs: 3800 },
-  { date: "2024-07-01", revenue: 3490, cogs: 4300 },
-];
+import { useRestaurant } from "@/context/RestaurantContext";
+import { FinancialRecord } from "@/lib/types";
+import { startOfWeek, startOfMonth, startOfYear, endOfWeek, endOfMonth, endOfYear, eachDayOfInterval, format, subMonths, subWeeks, subYears } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const chartConfig = {
   revenue: {
@@ -48,6 +43,122 @@ const chartConfig = {
 
 export default function FinanzasPage() {
   const [range, setRange] = useState("this_month");
+  const { financials, inventoryItems } = useRestaurant();
+
+  const {
+    totalRevenue,
+    totalCogs,
+    grossProfit,
+    profitMargin,
+    revenueChange,
+    cogsChange,
+    profitChange,
+    marginChange,
+    chartData,
+  } = useMemo(() => {
+    const now = new Date();
+    let startDate: Date, endDate: Date;
+    let prevStartDate: Date, prevEndDate: Date;
+
+    switch(range) {
+        case 'today':
+            startDate = new Date(now.setHours(0, 0, 0, 0));
+            endDate = new Date(now.setHours(23, 59, 59, 999));
+            prevStartDate = new Date(new Date().setDate(now.getDate() - 1));
+            prevEndDate = new Date(new Date().setDate(now.getDate() - 1));
+            break;
+        case 'this_week':
+            startDate = startOfWeek(now);
+            endDate = endOfWeek(now);
+            prevStartDate = subWeeks(startDate, 1);
+            prevEndDate = subWeeks(endDate, 1);
+            break;
+        case 'this_year':
+            startDate = startOfYear(now);
+            endDate = endOfYear(now);
+            prevStartDate = subYears(startDate, 1);
+            prevEndDate = subYears(endDate, 1);
+            break;
+        case 'this_month':
+        default:
+            startDate = startOfMonth(now);
+            endDate = endOfMonth(now);
+            prevStartDate = subMonths(startDate, 1);
+            prevEndDate = subMonths(endDate, 1);
+            break;
+    }
+
+    const filterByDate = (data: FinancialRecord[], start: Date, end: Date) =>
+        data.filter(item => {
+            const itemDate = new Date(item.date);
+            return itemDate >= start && itemDate <= end;
+        });
+
+    const currentPeriodRevenueRecords = filterByDate(financials, startDate, endDate).filter(f => f.type === 'revenue');
+    const previousPeriodRevenueRecords = filterByDate(financials, prevStartDate, prevEndDate).filter(f => f.type === 'revenue');
+
+    const totalRevenue = currentPeriodRevenueRecords.reduce((sum, item) => sum + item.amount, 0);
+    const prevTotalRevenue = previousPeriodRevenueRecords.reduce((sum, item) => sum + item.amount, 0);
+
+    // Dummy COGS and changes for now
+    const totalCogs = totalRevenue * 0.35; // Example
+    const prevTotalCogs = prevTotalRevenue * 0.38; // Example
+
+    const grossProfit = totalRevenue - totalCogs;
+    const prevGrossProfit = prevTotalRevenue - prevTotalCogs;
+
+    const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+    const prevProfitMargin = prevTotalRevenue > 0 ? (prevGrossProfit / prevTotalRevenue) * 100 : 0;
+
+    const calculateChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / previous) * 100;
+    };
+    
+    const revenueChange = calculateChange(totalRevenue, prevTotalRevenue);
+    const cogsChange = calculateChange(totalCogs, prevTotalCogs);
+    const profitChange = calculateChange(grossProfit, prevGrossProfit);
+    const marginChange = profitMargin - prevProfitMargin;
+
+    // Generate chart data by day for the selected range
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const chartData = days.map(day => {
+        const dailyRevenue = filterByDate(financials, day, new Date(day).setHours(23, 59, 59, 999))
+            .filter(f => f.type === 'revenue')
+            .reduce((sum, item) => sum + item.amount, 0);
+        
+        return {
+            date: format(day, 'yyyy-MM-dd'),
+            revenue: dailyRevenue,
+            cogs: dailyRevenue * 0.35, // Example COGS
+        };
+    });
+
+    return {
+        totalRevenue,
+        totalCogs,
+        grossProfit,
+        profitMargin,
+        revenueChange,
+        cogsChange,
+        profitChange,
+        marginChange,
+        chartData
+    };
+}, [range, financials]);
+
+
+const formatChange = (change: number) => {
+    if (change === 0 || !isFinite(change)) return "0.0%";
+    const sign = change > 0 ? "+" : "";
+    return `${sign}${change.toFixed(1)}%`;
+}
+
+const formatMarginChange = (change: number) => {
+    if (change === 0 || !isFinite(change)) return "0.0pp";
+    const sign = change > 0 ? "+" : "";
+    return `${sign}${change.toFixed(1)}pp`;
+}
 
   return (
     <div className="space-y-6">
@@ -79,8 +190,8 @@ export default function FinanzasPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+15.2% vs mes anterior</p>
+            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{formatChange(revenueChange)} vs periodo anterior</p>
           </CardContent>
         </Card>
         <Card>
@@ -89,8 +200,8 @@ export default function FinanzasPage() {
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$12,873.45</div>
-            <p className="text-xs text-muted-foreground">+5.1% vs mes anterior</p>
+            <div className="text-2xl font-bold">${totalCogs.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{formatChange(cogsChange)} vs periodo anterior</p>
           </CardContent>
         </Card>
         <Card>
@@ -99,8 +210,8 @@ export default function FinanzasPage() {
             <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$32,358.44</div>
-            <p className="text-xs text-muted-foreground">+21.3% vs mes anterior</p>
+            <div className="text-2xl font-bold">${grossProfit.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{formatChange(profitChange)} vs periodo anterior</p>
           </CardContent>
         </Card>
         <Card>
@@ -109,8 +220,8 @@ export default function FinanzasPage() {
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">71.5%</div>
-            <p className="text-xs text-muted-foreground">+3.2pp vs mes anterior</p>
+            <div className="text-2xl font-bold">{profitMargin.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">{formatMarginChange(marginChange)} vs periodo anterior</p>
           </CardContent>
         </Card>
       </div>
@@ -118,7 +229,7 @@ export default function FinanzasPage() {
       <Card>
         <CardHeader>
             <CardTitle>Evolución de Ingresos vs COGS</CardTitle>
-            <CardDescription>Análisis de los últimos 7 meses.</CardDescription>
+            <CardDescription>Análisis del período seleccionado.</CardDescription>
         </CardHeader>
         <CardContent>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
@@ -138,7 +249,8 @@ export default function FinanzasPage() {
                         tickMargin={8}
                         tickFormatter={(value) => {
                             const date = new Date(value);
-                            return date.toLocaleDateString("es-ES", {month: "short"});
+                            const formatStyle = range === 'this_year' ? 'MMM' : 'dd/MMM';
+                            return format(date, formatStyle, { locale: es });
                         }}
                     />
                     <YAxis
@@ -158,6 +270,7 @@ export default function FinanzasPage() {
                         fill="var(--color-revenue)"
                         fillOpacity={0.4}
                         stroke="var(--color-revenue)"
+                        stackId="a"
                     />
                     <Area
                         dataKey="cogs"
@@ -165,6 +278,7 @@ export default function FinanzasPage() {
                         fill="var(--color-cogs)"
                         fillOpacity={0.4}
                         stroke="var(--color-cogs)"
+                        stackId="a"
                     />
                 </AreaChart>
             </ChartContainer>

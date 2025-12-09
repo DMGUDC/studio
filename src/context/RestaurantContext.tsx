@@ -2,13 +2,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import type { Order, OrderItem, SubRecipe, Dish, InventoryItem, Cook, Table, Waiter, NewOrderData } from '@/lib/types';
-import { initialOrders, initialDishes, initialInventoryItems, initialSubRecipes, initialCooks, initialTables, initialWaiters } from '@/lib/data';
+import type { Order, OrderItem, SubRecipe, Dish, InventoryItem, Cook, Table, Waiter, NewOrderData, FinancialRecord, PaymentMethod } from '@/lib/types';
+import { initialOrders, initialDishes, initialInventoryItems, initialSubRecipes, initialCooks, initialTables, initialWaiters, initialFinancials } from '@/lib/data';
 
 interface RestaurantContextType {
     orders: Order[];
     setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
     addOrder: (newOrderData: NewOrderData) => void;
+    settleOrder: (orderId: string, paymentMethod: PaymentMethod) => void;
     dishes: Dish[];
     setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
     inventoryItems: InventoryItem[];
@@ -18,6 +19,8 @@ interface RestaurantContextType {
     cooks: Cook[];
     tables: Table[];
     waiters: Waiter[];
+    financials: FinancialRecord[];
+    setFinancials: React.Dispatch<React.SetStateAction<FinancialRecord[]>>;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const [dishes, setDishes] = useState<Dish[]>(initialDishes);
     const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(initialInventoryItems);
     const [subRecipes, setSubRecipes] = useState<SubRecipe[]>(initialSubRecipes);
+    const [financials, setFinancials] = useState<FinancialRecord[]>(initialFinancials);
 
     const addOrder = (newOrderData: NewOrderData) => {
         const orderItemsWithSubRecipes = newOrderData.items.map(item => {
@@ -56,10 +60,33 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         setOrders(prev => [newOrder, ...prev]);
     }
 
+    const settleOrder = (orderId: string, paymentMethod: PaymentMethod) => {
+        let settledOrder: Order | undefined;
+        setOrders(prevOrders => prevOrders.map(order => {
+            if (order.id === orderId) {
+                settledOrder = { ...order, status: 'Entregado', paymentMethod };
+                return settledOrder;
+            }
+            return order;
+        }));
+
+        if (settledOrder) {
+            const newFinancialRecord: FinancialRecord = {
+                id: `fin${Date.now()}`,
+                date: new Date(),
+                amount: settledOrder.total,
+                type: 'revenue',
+                description: `Pedido ${settledOrder.id}`
+            };
+            setFinancials(prev => [...prev, newFinancialRecord]);
+        }
+    }
+
     const value = {
         orders,
         setOrders,
         addOrder,
+        settleOrder,
         dishes,
         setDishes,
         inventoryItems,
@@ -68,7 +95,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         setSubRecipes,
         cooks: initialCooks,
         tables: initialTables,
-        waiters: initialWaiters
+        waiters: initialWaiters,
+        financials,
+        setFinancials,
     };
 
     return (

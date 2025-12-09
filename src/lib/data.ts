@@ -1,5 +1,6 @@
 
-import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter } from './types';
+
+import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord } from './types';
 
 export const initialCooks: Cook[] = [
     { id: "cook1", name: "Juan" },
@@ -62,6 +63,7 @@ export const initialOrders: Order[] = [
       table: "Mesa 5",
       waiter: "Carlos",
       status: "Entregado",
+      paymentMethod: "Tarjeta",
       total: 42.5,
       timestamp: "hace 5 minutos",
       createdAt: Date.now() - 5 * 60 * 1000,
@@ -168,6 +170,7 @@ export const initialOrders: Order[] = [
       table: "Mesa 3",
       waiter: "Ana",
       status: "Entregado",
+      paymentMethod: "Efectivo",
       total: 55.75,
       timestamp: "hace 1 hora",
       createdAt: Date.now() - 60 * 60 * 1000,
@@ -196,4 +199,9 @@ export const initialWaiters: Waiter[] = [
     { id: 'usr02', name: "Carlos" },
     { id: 'usr03', name: "Ana" },
     { id: 'usr04', name: "Sofia" },
+];
+
+export const initialFinancials: FinancialRecord[] = [
+    { id: 'fin001', date: new Date(Date.now() - 5 * 60 * 1000), amount: 42.5, type: 'revenue', description: 'Pedido ORD001'},
+    { id: 'fin002', date: new Date(Date.now() - 60 * 60 * 1000), amount: 55.75, type: 'revenue', description: 'Pedido ORD005'},
 ];
