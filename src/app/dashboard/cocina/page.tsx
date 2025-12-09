@@ -270,53 +270,21 @@ export default function CocinaPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const stationCooks: Record<string, Cook[]> = {
-    "Platos Calientes": cooks.filter(c => ['cook1', 'cook3'].includes(c.id)),
-    "Platos Fríos": cooks.filter(c => ['cook2'].includes(c.id)),
-  }
-
-  const getStationForSubRecipe = (subRecipeName: string): string => {
-      const coldPrep = ["ensalada", "aderezo", "lechuga"];
-      if (coldPrep.some(term => subRecipeName.toLowerCase().includes(term))) {
-          return "Platos Fríos";
-      }
-      return "Platos Calientes";
-  }
-  
-  const subRecipesByStation: Record<string, {order: Order, item: OrderItem, subRecipe: SubRecipe}[]> = {
-      "Platos Calientes": [],
-      "Platos Fríos": [],
-  };
-
-  orders.forEach(order => {
-      order.items.forEach(item => {
-          item.subRecipes.forEach(subRecipe => {
-              if (subRecipe.status !== 'Listo') {
-                const station = getStationForSubRecipe(subRecipe.name);
-                subRecipesByStation[station].push({order, item, subRecipe});
-              }
-          })
-      })
-  })
-
-
   return (
-    <div className="flex h-full gap-6">
-      {Object.entries(subRecipesByStation).map(([stationName, stationSubRecipes]) => (
-        <div key={stationName} className="w-1/2 h-full">
-            <h2 className="text-2xl font-headline mb-4 text-center">{stationName} ({stationSubRecipes.length})</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 auto-rows-max">
-                {orders.map(order => (
-                     <OrderTicket 
-                        key={order.id} 
-                        order={order} 
-                        onSubRecipeStatusChange={handleSubRecipeStatusChange}
-                        onAssignCook={handleAssignCook}
-                    />
-                ))}
-            </div>
-        </div>
-      ))}
+    <div className="h-full">
+      <h2 className="text-2xl font-headline mb-4 text-center">Platillos ({orders.length})</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max">
+        {orders
+          .sort((a, b) => a.createdAt - b.createdAt)
+          .map(order => (
+            <OrderTicket 
+              key={order.id} 
+              order={order} 
+              onSubRecipeStatusChange={handleSubRecipeStatusChange}
+              onAssignCook={handleAssignCook}
+            />
+        ))}
+      </div>
     </div>
   );
 }

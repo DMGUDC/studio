@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, FileText, Split, PlusCircle } from "lucide-react";
+import { MoreHorizontal, FileText, PlusCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -35,8 +35,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 const ordersData = [
   {
@@ -100,7 +98,6 @@ const ordersData = [
 ];
 
 type Order = typeof ordersData[0];
-type OrderItem = typeof ordersData[0]['items'][0];
 
 const statusVariant: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
   Entregado: "outline",
@@ -157,101 +154,14 @@ function OrderDetailsDialog({ order, open, onOpenChange }: { order: Order | null
     )
 }
 
-function SplitBillDialog({ order, open, onOpenChange }: { order: Order | null, open: boolean, onOpenChange: (open: boolean) => void }) {
-    const [splitWays, setSplitWays] = useState(2);
-    const [selectedItems, setSelectedItems] = useState<Record<string, number[]>>({});
-
-    if (!order) return null;
-    
-    const handleItemSelection = (item: OrderItem, personIndex: number) => {
-        setSelectedItems(prev => {
-            const currentSelections = prev[item.id] || [];
-            if (currentSelections.includes(personIndex)) {
-                return {...prev, [item.id]: currentSelections.filter(i => i !== personIndex)}
-            } else {
-                return {...prev, [item.id]: [...currentSelections, personIndex]}
-            }
-        });
-    }
-
-    const totals = Array.from({length: splitWays}, (_, i) => {
-        return order.items.reduce((acc, item) => {
-            if (selectedItems[item.id]?.includes(i)) {
-                return acc + item.price * item.quantity / selectedItems[item.id].length;
-            }
-            return acc;
-        }, 0);
-    });
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Dividir Cuenta: {order.id}</DialogTitle>
-                    <DialogDescription>Asigna productos a cada persona para dividir el total.</DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
-                    <div className="md:col-span-1">
-                        <Label>Dividir entre</Label>
-                        <Input type="number" value={splitWays} onChange={e => setSplitWays(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="mt-2" />
-                        <div className="mt-4 space-y-2">
-                            <h4 className="font-semibold">Totales por persona:</h4>
-                            {totals.map((total, i) => (
-                                <div key={i} className="flex justify-between p-2 rounded-md bg-muted">
-                                    <span>Persona {i + 1}:</span>
-                                    <span className="font-bold">${total.toFixed(2)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="md:col-span-2">
-                        <h4 className="font-semibold mb-2">Productos del Pedido:</h4>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {order.items.map(item => (
-                            <Card key={item.id}>
-                                <CardContent className="p-3">
-                                    <div className="flex justify-between">
-                                      <p className="font-medium">{item.name} ({item.quantity}x)</p>
-                                      <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">Asignar a:</div>
-                                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-                                        {Array.from({ length: splitWays }, (_, i) => (
-                                            <div key={i} className="flex items-center space-x-2">
-                                                <Checkbox id={`${item.id}-p${i}`} onCheckedChange={() => handleItemSelection(item, i)} />
-                                                <Label htmlFor={`${item.id}-p${i}`} className="text-sm">Persona {i+1}</Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        </div>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                    <Button>Confirmar División</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
 export default function PedidosPage() {
   const [orders, setOrders] = useState(ordersData);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
-  const [isSplitBillOpen, setSplitBillOpen] = useState(false);
 
   const handleShowDetails = (order: Order) => {
     setSelectedOrder(order);
     setDetailsOpen(true);
-  }
-  
-  const handleSplitBill = (order: Order) => {
-    setSelectedOrder(order);
-    setSplitBillOpen(true);
   }
 
   return (
@@ -317,10 +227,6 @@ export default function PedidosPage() {
                         <FileText className="mr-2 h-4 w-4" />
                         Ver Detalles
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSplitBill(order)}>
-                        <Split className="mr-2 h-4 w-4" />
-                        Dividir Cuenta
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -331,7 +237,6 @@ export default function PedidosPage() {
       </CardContent>
     </Card>
     <OrderDetailsDialog order={selectedOrder} open={isDetailsOpen} onOpenChange={setDetailsOpen} />
-    <SplitBillDialog order={selectedOrder} open={isSplitBillOpen} onOpenChange={setSplitBillOpen} />
     </>
   );
 }
