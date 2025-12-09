@@ -263,7 +263,7 @@ function OrderTicket({
                         onValueChange={(cookId) =>
                           onAssignCook(order.id, item.name, sr.id, cookId)
                         }
-                        disabled={sr.status === "Listo"}
+                        disabled={sr.status !== "Pendiente"}
                       >
                         <SelectTrigger className="h-7 text-xs w-auto gap-1 pl-2 pr-1">
                           <User className="h-3 w-3 text-muted-foreground" />
