@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -7,7 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
 import { Calendar as CalendarIcon, TrendingUp, TrendingDown, CircleDollarSign, Percent } from "lucide-react";
 import {
   ChartContainer,
@@ -40,6 +47,8 @@ const chartConfig = {
 };
 
 export default function FinanzasPage() {
+  const [range, setRange] = useState("this_month");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -49,10 +58,18 @@ export default function FinanzasPage() {
             Análisis de ingresos, costos y ganancias.
           </p>
         </div>
-        <Button variant="outline">
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          <span>Este Mes</span>
-        </Button>
+        <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-[180px]">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Seleccionar Rango" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="today">Hoy</SelectItem>
+                <SelectItem value="this_week">Esta Semana</SelectItem>
+                <SelectItem value="this_month">Este Mes</SelectItem>
+                <SelectItem value="this_year">Este Año</SelectItem>
+            </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
