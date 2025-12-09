@@ -144,7 +144,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         });
 
         return { adjustedTotal: partialCost, isPartial: partialCost > 0 && partialCost < order.total };
-    }, [inventoryItems, dishes]);
+    }, [inventoryItems]);
 
 
     const updateOrderStatus = (orderId: string, status: Order['status'], finalAmount?: number) => {
