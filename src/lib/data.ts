@@ -4,10 +4,12 @@
 
 
 
+
+
 import type { Order, Dish, InventoryItem, SubRecipe, Cook, Table, Waiter, FinancialRecord, User } from './types';
 
 export const initialUsers: User[] = [
-    { id: 'usr01', name: "Gerente Demo", email: "gerente@xchef.local", role: "Gerente", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos", "/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario", "/dashboard/finanzas", "/dashboard/usuarios"] },
+    { id: 'usr01', name: "Gerente Demo", email: "gerente@xchef.local", role: "Gerente", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos", "/dashboard/cocina", "/dashboard/menu", "/dashboard/inventario", "/dashboard/finanzas", "/dashboard/facturacion", "/dashboard/usuarios"], avatarUrl: "https://images.unsplash.com/photo-1521119989659-a83eee488004?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjQyNzA2MTF8MA&ixlib=rb-4.1.0&q=80&w=1080" },
     { id: 'usr02', name: "Carlos", email: "mesero@xchef.local", role: "Mesero", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },
     { id: 'usr03', name: "Ana", email: "ana@xchef.local", role: "Mesero", status: "Activo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },
     { id: 'usr04', name: "Sofia", email: "sofia@xchef.local", role: "Mesero", status: "Inactivo", permissions: ["/dashboard", "/dashboard/mesas", "/dashboard/pedidos"] },

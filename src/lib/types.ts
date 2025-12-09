@@ -5,6 +5,7 @@
 
 
 
+
 export type Cook = {
     id: string;
     name: string;
@@ -110,4 +111,5 @@ export type Cook = {
     role: string;
     status: "Activo" | "Inactivo";
     permissions: string[];
+    avatarUrl?: string;
   }

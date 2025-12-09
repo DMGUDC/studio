@@ -12,6 +12,7 @@ interface AuthContextType {
     login: (email: string) => boolean;
     logout: () => void;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+    updateUserAvatar: (userId: string, avatarUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,13 +36,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         router.push('/login');
     };
+    
+    const updateUserAvatar = (userId: string, avatarUrl: string) => {
+        setUsers(prevUsers =>
+            prevUsers.map(u => (u.id === userId ? { ...u, avatarUrl } : u))
+        );
+        if (user && user.id === userId) {
+            setUser(prevUser => (prevUser ? { ...prevUser, avatarUrl } : null));
+        }
+    };
 
     const value = {
         user,
         users,
         login,
         logout,
-        setUsers
+        setUsers,
+        updateUserAvatar
     };
 
     return (

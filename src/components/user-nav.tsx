@@ -1,8 +1,7 @@
 
 "use client";
 
-import Link from "next/link";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,27 +17,50 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut, Settings, User, Monitor, Moon, Sun, Camera } from "lucide-react";
+import { LogOut, Monitor, Moon, Sun, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 
 export function UserNav() {
-  const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
-  const { user, logout } = useAuth();
+  const { user, logout, updateUserAvatar } = useAuth();
   const { setTheme } = useTheme();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        updateUserAvatar(user.id, dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
+    <>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleAvatarChange}
+      className="hidden"
+      accept="image/*"
+    />
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {userAvatar && (
+            {user.avatarUrl && (
               <AvatarImage
-                src={userAvatar.imageUrl}
+                src={user.avatarUrl}
                 alt="User avatar"
-                data-ai-hint={userAvatar.imageHint}
               />
             )}
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
@@ -56,7 +78,7 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-           <DropdownMenuItem>
+           <DropdownMenuItem onClick={triggerFileInput}>
             <Camera className="mr-2 h-4 w-4" />
             <span>Editar Foto</span>
           </DropdownMenuItem>
@@ -90,5 +112,6 @@ export function UserNav() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }
