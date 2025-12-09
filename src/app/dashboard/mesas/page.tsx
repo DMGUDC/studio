@@ -35,23 +35,23 @@ const initialFloors = {
   piso1: {
     name: "Piso Principal",
     tables: [
-      { id: 1, name: "Mesa 1", status: "disponible", x: 10, y: 10, shape: "square" },
-      { id: 2, name: "Mesa 2", status: "ocupada", x: 35, y: 10, people: 4, shape: "square", orderId: "ORD002" },
-      { id: 3, name: "Mesa 3", status: "disponible", x: 60, y: 10, shape: "square" },
-      { id: 4, name: "Mesa 4", status: "reservada", x: 10, y: 40, shape: "round" },
-      { id: 5, name: "Mesa 5", status: "ocupada", x: 35, y: 40, people: 2, shape: "round", orderId: "ORD001" },
-      { id: 6, name: "Barra 1", status: "ocupada", x: 85, y: 10, people: 1, shape: "square" },
-      { id: 7, name: "Barra 2", status: "disponible", x: 85, y: 30, shape: "square" },
-      { id: 8, name: "Mesa 8", status: "ocupada", x: 10, y: 70, shape: "square", orderId: "ORD004" },
+      { id: 1, name: "Mesa 1", status: "disponible" as const, x: 10, y: 10, shape: "square" },
+      { id: 2, name: "Mesa 2", status: "ocupada" as const, x: 35, y: 10, people: 4, shape: "square", orderId: "ORD002" },
+      { id: 3, name: "Mesa 3", status: "disponible" as const, x: 60, y: 10, shape: "square" },
+      { id: 4, name: "Mesa 4", status: "disponible" as const, x: 10, y: 40, shape: "round" },
+      { id: 5, name: "Mesa 5", status: "ocupada" as const, x: 35, y: 40, people: 2, shape: "round", orderId: "ORD001" },
+      { id: 6, name: "Barra 1", status: "ocupada" as const, x: 85, y: 10, people: 1, shape: "square", orderId: "ORD006" },
+      { id: 7, name: "Barra 2", status: "disponible" as const, x: 85, y: 30, shape: "square" },
+      { id: 8, name: "Mesa 8", status: "ocupada" as const, x: 10, y: 70, shape: "square", orderId: "ORD004" },
     ],
   },
   terraza: {
     name: "Terraza",
     tables: [
-      { id: 9, name: "Terraza 1", status: "ocupada", x: 15, y: 20, people: 3, shape: "square", orderId: "ORD003" },
-      { id: 10, name: "Terraza 2", status: "disponible", x: 45, y: 20, shape: "square" },
-      { id: 11, name: "Terraza 3", status: "reservada", x: 75, y: 20, shape: "round" },
-      { id: 12, name: "Terraza 4", status: "disponible", x: 15, y: 60, shape: "round" },
+      { id: 9, name: "Terraza 1", status: "ocupada" as const, x: 15, y: 20, people: 3, shape: "square", orderId: "ORD003" },
+      { id: 10, name: "Terraza 2", status: "disponible" as const, x: 45, y: 20, shape: "square" },
+      { id: 11, name: "Terraza 3", status: "disponible" as const, x: 75, y: 20, shape: "round" },
+      { id: 12, name: "Terraza 4", status: "disponible" as const, x: 15, y: 60, shape: "round" },
     ],
   },
 };
@@ -63,7 +63,6 @@ type FloorKey = keyof Floors;
 const statusStyles = {
   disponible: "bg-green-500/20 border-green-600 text-green-800",
   ocupada: "bg-primary/20 border-primary text-primary-foreground",
-  reservada: "bg-accent/20 border-accent text-accent-foreground",
 };
 
 const shapeStyles = {
@@ -175,7 +174,7 @@ export default function MesasPage() {
         const newFloors = { ...prevFloors };
         const tables = newFloors[selectedFloor].tables.map(table => {
             if (table.orderId === orderId) {
-                const { orderId, people, ...rest } = table;
+                const { orderId: oid, people, ...rest } = table;
                 return { ...rest, status: 'disponible' as const };
             }
             return table;
@@ -233,10 +232,10 @@ export default function MesasPage() {
   };
   
   const addTable = (shape: 'square' | 'round') => {
-      const newTable: Omit<Table, 'orderId' | 'people'> = {
+      const newTable = {
           id: Date.now(),
           name: `Mesa ${floors[selectedFloor].tables.length + 1}`,
-          status: 'disponible',
+          status: 'disponible' as const,
           x: 5,
           y: 5,
           shape: shape
@@ -357,3 +356,5 @@ export default function MesasPage() {
     </div>
   );
 }
+
+    

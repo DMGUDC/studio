@@ -178,7 +178,7 @@ export const initialOrders: Order[] = [
     },
     {
       id: "ORD006",
-      table: "Mesa 5",
+      table: "Barra 1",
       waiter: "Carlos",
       status: "Cancelado",
       total: 25.0,
@@ -205,3 +205,5 @@ export const initialFinancials: FinancialRecord[] = [
     { id: 'fin001', date: new Date(Date.now() - 5 * 60 * 1000), amount: 42.5, type: 'revenue', description: 'Pedido ORD001'},
     { id: 'fin002', date: new Date(Date.now() - 60 * 60 * 1000), amount: 55.75, type: 'revenue', description: 'Pedido ORD005'},
 ];
+
+    
