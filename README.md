@@ -107,20 +107,33 @@ mysql -u root -p < backend/config/esquema.sql
 ```bash
 cd backend
 
-# Copiar archivo de configuración
+# Crear archivo .env (o copiar del ejemplo)
 cp .env.example .env
-
-# Editar .env con tus credenciales de MySQL:
-# DB_HOST=localhost
-# DB_PORT=3306
-# DB_USER=root
-# DB_PASSWORD=
-# DB_NAME=xchef_db
-# JWT_SECRET=tu_clave_secreta
 
 # Instalar dependencias
 npm install
 ```
+
+**Ejemplo de archivo `.env` del backend:**
+
+```env
+# Configuración del servidor
+PORT=3000
+NODE_ENV=development
+
+# Configuración de la base de datos MySQL
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=tu_contraseña_mysql
+DB_NAME=xchef_db
+
+# Configuración de JWT
+JWT_SECRET=tu_clave_secreta_segura_aqui
+JWT_EXPIRES_IN=24h
+```
+
+> **Nota:** Asegúrate de cambiar `DB_PASSWORD` con tu contraseña de MySQL y `JWT_SECRET` con una clave segura en producción.
 
 ### 4. Configurar el Frontend
 
