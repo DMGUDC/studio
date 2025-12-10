@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { PlusCircle, FileDown, ArrowDownUp, Trash, Edit, MoreHorizontal, ShoppingCart } from "lucide-react";
+import { PlusCircle, FileDown, ArrowDownUp, Trash, Edit, MoreHorizontal, ShoppingCart, FileSpreadsheet, FileText } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -39,6 +39,7 @@ import {
   } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useRestaurant } from "@/context/RestaurantContext";
+import { apiInventario } from "@/services/api";
 import type { InventoryItem } from "@/lib/types";
 
 type ProductData = Omit<InventoryItem, 'id'>;
@@ -214,22 +215,143 @@ export default function InventarioPage() {
     setRestockModalOpen(true);
   }
 
-  const handleSaveProduct = (product: ProductData) => {
-    if(editingItem) {
-        setInventoryItems(prev => prev.map(item => item.id === editingItem.id ? { ...editingItem, ...product } : item));
-    } else {
-        const newProduct: InventoryItem = {
-            id: `inv${Date.now()}`,
-            ...product
-        };
-        setInventoryItems(prev => [...prev, newProduct]);
+  const handleSaveProduct = async (product: ProductData) => {
+    try {
+        if(editingItem) {
+            await apiInventario.actualizar(editingItem.id, {
+                nombre: product.name,
+                categoria: product.category,
+                stock: product.stock,
+                unidad: product.unit,
+                umbral: product.threshold,
+                precio: product.price,
+            });
+            setInventoryItems(prev => prev.map(item => item.id === editingItem.id ? { ...editingItem, ...product } : item));
+        } else {
+            const response = await apiInventario.crear({
+                nombre: product.name,
+                categoria: product.category,
+                stock: product.stock,
+                unidad: product.unit,
+                umbral: product.threshold,
+                precio: product.price,
+            });
+            const newProduct: InventoryItem = {
+                id: response.producto?.id || `inv${Date.now()}`,
+                ...product
+            };
+            setInventoryItems(prev => [...prev, newProduct]);
+        }
+    } catch (error) {
+        console.error('Error al guardar producto:', error);
+        // Fallback local
+        if(editingItem) {
+            setInventoryItems(prev => prev.map(item => item.id === editingItem.id ? { ...editingItem, ...product } : item));
+        } else {
+            const newProduct: InventoryItem = {
+                id: `inv${Date.now()}`,
+                ...product
+            };
+            setInventoryItems(prev => [...prev, newProduct]);
+        }
     }
     setProductModalOpen(false);
     setEditingItem(null);
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+        await apiInventario.eliminar(itemId);
+    } catch (error) {
+        console.error('Error al eliminar producto:', error);
+    }
     setInventoryItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  // Función para exportar a CSV
+  const handleExportCSV = () => {
+    const headers = ['Producto', 'Categoría', 'Precio/Unidad', 'Stock Actual', 'Unidad', 'Umbral', 'Estado'];
+    const rows = sortedAndFilteredItems.map(item => [
+      item.name,
+      item.category,
+      `$${item.price.toFixed(2)}`,
+      item.stock.toString(),
+      item.unit,
+      item.threshold.toString(),
+      item.stock <= item.threshold ? 'Bajo Stock' : 'En Stock'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  // Función para exportar a PDF
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Inventario - XChef</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
+          th { background-color: #f5f5f5; font-weight: bold; }
+          tr:nth-child(even) { background-color: #fafafa; }
+          .bajo-stock { color: #dc2626; font-weight: bold; }
+          .en-stock { color: #16a34a; }
+          .fecha { color: #666; font-size: 12px; margin-bottom: 20px; }
+          @media print { body { print-color-adjust: exact; } }
+        </style>
+      </head>
+      <body>
+        <h1>Inventario - XChef Restaurante</h1>
+        <p class="fecha">Generado el: ${new Date().toLocaleString('es-ES')}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio/Unidad</th>
+              <th>Stock Actual</th>
+              <th>Umbral</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sortedAndFilteredItems.map(item => `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.category}</td>
+                <td>$${item.price.toFixed(2)} / ${item.unit}</td>
+                <td>${item.stock} ${item.unit}</td>
+                <td>${item.threshold} ${item.unit}</td>
+                <td class="${item.stock <= item.threshold ? 'bajo-stock' : 'en-stock'}">
+                  ${item.stock <= item.threshold ? 'Bajo Stock' : 'En Stock'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
 
@@ -245,9 +367,21 @@ export default function InventarioPage() {
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
-              <FileDown className="mr-2 h-4 w-4" /> Exportar
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <FileDown className="mr-2 h-4 w-4" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="mr-2 h-4 w-4" /> Exportar PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Producto
             </Button>

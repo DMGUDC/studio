@@ -27,6 +27,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useRestaurant } from "@/context/RestaurantContext";
+import { apiPedidos } from "@/services/api";
 import type { Order, SubRecipe } from "@/lib/types";
 
 
@@ -216,12 +217,13 @@ export default function CocinaPage() {
   const [selectedSubRecipe, setSelectedSubRecipe] = useState<SubRecipe | null>(null);
   const [isDetailsOpen, setDetailsOpen] = useState(false);
 
-  const updateSubRecipe = (
+  const updateSubRecipe = async (
     orderId: string,
     itemId: string,
     subRecipeId: string,
     updates: Partial<SubRecipe>
-  ): void => {
+  ): Promise<void> => {
+    // Actualizar estado local
     setOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== orderId) return order;
@@ -238,6 +240,16 @@ export default function CocinaPage() {
         return { ...order, items: updatedItems };
       })
     );
+
+    // Persistir en la base de datos
+    try {
+      await apiPedidos.actualizarSubreceta(orderId, itemId, subRecipeId, {
+        estado: updates.status || 'Pendiente',
+        cocineroAsignado: updates.assignedCook,
+      });
+    } catch (error) {
+      console.error('Error al actualizar subreceta:', error);
+    }
   };
 
   const handleAssignCook = (

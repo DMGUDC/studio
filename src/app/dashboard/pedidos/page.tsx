@@ -47,7 +47,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRestaurant } from '@/context/RestaurantContext';
 import type { Order, OrderItem, NewOrderData, EditedOrderData } from '@/lib/types';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 
@@ -368,7 +368,7 @@ export default function PedidosPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                    {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: es })}
+                    {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
                 </TableCell>
                 <TableCell className="text-right">
                   ${order.total.toFixed(2)}

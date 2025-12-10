@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { XChefLogo } from "@/components/icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { allNavItems } from "@/app/dashboard/layout";
 
@@ -23,17 +23,20 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { login } = useAuth();
-  const [email, setEmail] = useState("gerente@xchef.local");
-  const [password, setPassword] = useState("xchef123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    document.title = "Iniciar Sesión | XChef";
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const loggedInUser = login(email);
+    try {
+      const loggedInUser = await login(email, password);
       if (loggedInUser) {
         toast({
           title: "Inicio de Sesión Exitoso",
@@ -56,7 +59,14 @@ export default function LoginPage() {
         });
         setIsLoading(false);
       }
-    }, 1000);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error de Conexión",
+        description: "No se pudo conectar con el servidor.",
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,7 +86,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="gerente@xchef.local"
+                placeholder="correo@ejemplo.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -101,14 +111,8 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex-col text-center text-xs text-muted-foreground">
           <p>
-            Usa las credenciales de prueba para ingresar:
+            Sistema de Gestión de Restaurantes XChef
           </p>
-          <ul className="mt-2 list-disc list-inside">
-            <li>gerente@xchef.local</li>
-            <li>mesero@xchef.local</li>
-            <li>cocinero@xchef.local</li>
-          </ul>
-          <p className="mt-1">(Contraseña: xchef123)</p>
         </CardFooter>
       </Card>
     </div>
