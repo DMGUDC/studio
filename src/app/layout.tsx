@@ -16,6 +16,7 @@ export default function RootLayout({
       <head>
         <title>XChef Frontend</title>
         <meta name="description" content="Sistema Integral de Gestión de Restaurantes" />
+        <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />

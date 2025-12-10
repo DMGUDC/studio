@@ -1,28 +1,63 @@
 "use client";
 
-import { useRestaurant } from "@/context/RestaurantContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { XChefLogo } from "@/components/icons";
 import Link from "next/link";
-import { useMemo } from "react";
-import type { Dish } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { apiPlatillos } from "@/services/api";
+
+type Dish = {
+  id: string;
+  name: string;
+  nombre?: string;
+  category: string;
+  categoria?: string;
+  price: number;
+  precio?: number;
+  description?: string;
+  descripcion?: string;
+  isPublic?: boolean;
+  esPublico?: boolean;
+};
 
 export default function PublicMenuPage() {
-  const { dishes, isDishAvailable } = useRestaurant();
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const groupedMenu = useMemo(() => {
-    const publicDishes = dishes.filter(dish => dish.isPublic && isDishAvailable(dish.id));
+  useEffect(() => {
+    document.title = "Menú | XChef Restaurante";
     
-    return publicDishes.reduce((acc, dish) => {
-      const category = dish.category || "Otros";
-      if (!acc[category]) {
-        acc[category] = [];
+    // Cargar platillos públicos directamente desde la API
+    const loadDishes = async () => {
+      try {
+        const response = await apiPlatillos.obtenerPublicos();
+        const formattedDishes = response.map((p: { id: string; nombre?: string; name?: string; categoria?: string; category?: string; precio?: number | string; price?: number; descripcion?: string; description?: string }) => ({
+          id: p.id,
+          name: p.name || p.nombre || '',
+          category: p.category || p.categoria || 'Otros',
+          price: parseFloat(String(p.price ?? p.precio ?? 0)) || 0,
+          description: p.description || p.descripcion || '',
+        }));
+        setDishes(formattedDishes);
+      } catch (error) {
+        console.error('Error al cargar menú:', error);
+      } finally {
+        setLoading(false);
       }
-      acc[category].push(dish);
-      return acc;
-    }, {} as Record<string, Dish[]>);
-  }, [dishes, isDishAvailable]);
+    };
+    
+    loadDishes();
+  }, []);
+
+  // Agrupar platillos por categoría
+  const groupedMenu = dishes.reduce((acc, dish) => {
+    const category = dish.category || "Otros";
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(dish);
+    return acc;
+  }, {} as Record<string, Dish[]>);
 
   return (
     <div className="bg-background min-h-screen">
@@ -42,7 +77,11 @@ export default function PublicMenuPage() {
           </p>
         </div>
         <div className="space-y-8">
-            {Object.keys(groupedMenu).length > 0 ? (
+            {loading ? (
+                <div className="text-center py-16">
+                     <p className="text-muted-foreground text-lg">Cargando menú...</p>
+                </div>
+            ) : Object.keys(groupedMenu).length > 0 ? (
                 Object.entries(groupedMenu).map(([category, categoryDishes]) => (
                     <div key={category}>
                     <h2 className="text-2xl font-semibold font-headline mb-4 pb-2 border-b-2 border-primary">{category}</h2>

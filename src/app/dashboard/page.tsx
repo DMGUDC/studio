@@ -116,6 +116,46 @@ export default function DashboardPage() {
         .sort((a,b) => b.date.getTime() - a.date.getTime())
         .slice(0, 5);
 
+    // Cálculo de eficiencia de cocina
+    // Basado en: pedidos entregados vs cancelados y subrecetas completadas
+    const completedOrders = orders.filter(o => o.status === 'Entregado');
+    const cancelledOrders = orders.filter(o => o.status === 'Cancelado');
+    const totalProcessedOrders = completedOrders.length + cancelledOrders.length;
+    
+    // Contar subrecetas completadas vs totales en pedidos activos/listos
+    let totalSubRecipes = 0;
+    let completedSubRecipes = 0;
+    
+    orders.filter(o => ['Preparando', 'Listo', 'Entregado'].includes(o.status)).forEach(order => {
+      order.items.forEach(item => {
+        if (item.subRecipes) {
+          totalSubRecipes += item.subRecipes.length;
+          completedSubRecipes += item.subRecipes.filter(sr => sr.status === 'Listo').length;
+        }
+      });
+    });
+
+    // Calcular eficiencia combinada
+    let kitchenEfficiency = 0;
+    let efficiencyLabel = 'Sin datos';
+    
+    if (totalProcessedOrders > 0 || totalSubRecipes > 0) {
+      const orderEfficiency = totalProcessedOrders > 0 
+        ? (completedOrders.length / totalProcessedOrders) * 100 
+        : 100;
+      const subRecipeEfficiency = totalSubRecipes > 0 
+        ? (completedSubRecipes / totalSubRecipes) * 100 
+        : 100;
+      
+      // Promedio ponderado: 60% pedidos, 40% subrecetas
+      kitchenEfficiency = (orderEfficiency * 0.6) + (subRecipeEfficiency * 0.4);
+      
+      if (kitchenEfficiency >= 90) efficiencyLabel = 'Excelente';
+      else if (kitchenEfficiency >= 75) efficiencyLabel = 'Buena';
+      else if (kitchenEfficiency >= 50) efficiencyLabel = 'Regular';
+      else efficiencyLabel = 'Baja';
+    }
+
 
     return {
       todayRevenue,
@@ -127,6 +167,10 @@ export default function DashboardPage() {
       chartData: monthlyData,
       topDishes,
       recentExpenses,
+      kitchenEfficiency,
+      efficiencyLabel,
+      completedSubRecipes,
+      totalSubRecipes,
     };
   }, [orders, financials]);
 
@@ -172,8 +216,12 @@ export default function DashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98%</div>
-            <p className="text-xs text-muted-foreground">Eficiencia del último turno (demo)</p>
+            <div className="text-2xl font-bold">
+              {dashboardStats.kitchenEfficiency > 0 ? `${dashboardStats.kitchenEfficiency.toFixed(0)}%` : 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dashboardStats.efficiencyLabel} - {dashboardStats.completedSubRecipes}/{dashboardStats.totalSubRecipes} subrecetas
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -47,6 +47,7 @@ import {
     SelectValue,
   } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
+import { apiUsuarios } from '@/services/api';
 import type { User } from '@/lib/types';
 
 
@@ -78,7 +79,7 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
         setUser(prev => ({ ...prev, [name]: value }));
     };
     
-    const handleSelectChange = (name: 'status', value: string) => {
+    const handleSelectChange = (name: 'status', value: 'Activo' | 'Inactivo') => {
         setUser(prev => ({...prev, [name]: value}));
     }
 
@@ -120,7 +121,7 @@ function UserForm({ onSave, userToEdit }: { onSave: (user: UserFormData) => void
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="status">Estado</Label>
-                    <Select value={user.status} onValueChange={(value) => handleSelectChange('status', value)}>
+                    <Select value={user.status} onValueChange={(value) => handleSelectChange('status', value as 'Activo' | 'Inactivo')}>
                         <SelectTrigger><SelectValue placeholder="Seleccionar Estado"/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="Activo">Activo</SelectItem>
@@ -171,21 +172,54 @@ export default function UsuariosPage() {
     setModalOpen(true);
   }
 
-  const handleSaveUser = (userData: UserFormData) => {
-    if(editingUser) {
-        setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData } : u));
-    } else {
-        const newUser: User = {
-            id: `usr${Date.now()}`,
-            ...userData
-        };
-        setUsers(prev => [...prev, newUser]);
+  const handleSaveUser = async (userData: UserFormData) => {
+    try {
+        if(editingUser) {
+            await apiUsuarios.actualizar(editingUser.id, {
+                nombre: userData.name,
+                correo: userData.email,
+                rol: userData.role,
+                estado: userData.status,
+                permisos: userData.permissions,
+            });
+            setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData } : u));
+        } else {
+            const response = await apiUsuarios.crear({
+                nombre: userData.name,
+                correo: userData.email,
+                rol: userData.role,
+                estado: userData.status,
+                permisos: userData.permissions,
+            });
+            const newUser: User = {
+                id: response.usuario?.id || `usr${Date.now()}`,
+                ...userData
+            };
+            setUsers(prev => [...prev, newUser]);
+        }
+    } catch (error) {
+        console.error('Error al guardar usuario:', error);
+        // Fallback local
+        if(editingUser) {
+            setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, ...userData } : u));
+        } else {
+            const newUser: User = {
+                id: `usr${Date.now()}`,
+                ...userData
+            };
+            setUsers(prev => [...prev, newUser]);
+        }
     }
     setModalOpen(false);
     setEditingUser(null);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
+    try {
+        await apiUsuarios.eliminar(userId);
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+    }
     setUsers(prev => prev.filter(u => u.id !== userId));
   };
 

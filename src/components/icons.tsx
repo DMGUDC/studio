@@ -1,36 +1,23 @@
 import type { SVGProps } from "react";
+import Image from "next/image";
 
-export function XChefLogo(props: SVGProps<SVGSVGElement>) {
+interface XChefLogoProps {
+  className?: string;
+}
+
+export function XChefLogo({ className = "h-8 w-8" }: XChefLogoProps) {
+  // Extrae el tamaño de la clase (h-8 = 32px, h-16 = 64px, etc.)
+  const sizeMatch = className.match(/h-(\d+)/);
+  const size = sizeMatch ? parseInt(sizeMatch[1]) * 4 : 32; // Tailwind h-8 = 32px
+  
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
-      width="1em"
-      height="1em"
-      {...props}
-    >
-      <path fill="none" d="M0 0h256v256H0z" />
-      <path
-        fill="currentColor"
-        d="M216 104c0-26.51-21.49-48-48-48s-48 21.49-48 48-21.49 48-48 48H32v40h192v-40h-40c-26.51 0-48-21.49-48-48zm-112 0c0-17.67 14.33-32 32-32s32 14.33 32 32-14.33 32-32 32-32-14.33-32-32z"
-        opacity="0.2"
-      />
-      <path
-        fill="currentColor"
-        d="M208,48H48A24,24,0,0,0,24,72v8a8,8,0,0,0,16,0V72a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8v8a8,8,0,0,0,16,0V72A24,24,0,0,0,208,48Z"
-      />
-      <path
-        fill="currentColor"
-        d="M100.8,218.5a8,8,0,0,1-11.3-1.5L40,160.59V128a8,8,0,0,1,16,0v28.69l44.8,50.71A8,8,0,0,1,100.8,218.5Z"
-      />
-      <path
-        fill="currentColor"
-        d="M216,120H96a56.06,56.06,0,0,0-56,56v.59l-2.8-3.17a8,8,0,1,0-11.8,10.8l16,18a8,8,0,0,0,5.9,2.8a8.33,8.33,0,0,0,5.4-2.3c.3-.3.7-.6,1-1L64,192H224v-8a56.06,56.06,0,0,0-56-56H160a56.06,56.06,0,0,0-56,56v8h59.2a8,8,0,0,0,5.9-2.8l16-18a8,8,0,1,0-11.8-10.8L176,173.79V176a40,40,0,0,1-40,40h-8a40,40,0,0,1-40-40,8,8,0,0,0-16,0,56.06,56.06,0,0,0,56,56h8a56.06,56.06,0,0,0,56-56,8,8,0,0,0-16,0,40,40,0,0,1-40,40H80a40,40,0,0,1-40-40v-.69l44.8,50.71a8,8,0,0,0,11.8-10.8L80,184H224a8,8,0,0,0,8-8V152H40a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V168H64v8a56.06,56.06,0,0,0,56,56h16.69l-19.8-22.3a8,8,0,0,1-11.8,10.8L152,236.1a8,8,0,0,1,11.8-10.8L144,204.1V176a40,40,0,0,1,40-40h8a40,40,0,0,1,40,40,8,8,0,0,0,16,0A56.06,56.06,0,0,0,192,120Z"
-      />
-       <path
-        fill="currentColor"
-        d="M155.2,218.5a8,8,0,0,0,5.9-2.8l16-18a8,8,0,1,0-11.8-10.8l-16,18a8,8,0,0,0,5.9,13.6Z"
-      />
-    </svg>
+    <Image
+      src="/logo.png"
+      alt="XChef Logo"
+      width={size}
+      height={size}
+      className={className}
+      priority
+    />
   );
 }

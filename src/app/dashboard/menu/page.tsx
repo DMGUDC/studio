@@ -43,10 +43,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRestaurant } from "@/context/RestaurantContext";
+import { apiPlatillos, apiSubRecetas } from "@/services/api";
 import type { Dish, Ingredient, SubRecipe } from '@/lib/types';
 
+// Tipo para datos del formulario de subreceta
+type SubRecipeFormData = {
+    name: string;
+    description: string;
+    prepTime: number;
+    ingredients: Ingredient[];
+};
 
-function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: Omit<SubRecipe, 'id' | 'status' | 'assignedCook'>) => void; subRecipe?: SubRecipe | null }) {
+function SubRecipeForm({ onSave, subRecipe }: { onSave: (data: SubRecipeFormData) => void; subRecipe?: SubRecipe | null }) {
     const { inventoryItems } = useRestaurant();
     const [name, setName] = useState(subRecipe?.name || "");
     const [description, setDescription] = useState(subRecipe?.description || "");
@@ -169,7 +177,7 @@ function DishForm({ onSave, dish, allSubRecipes }: { onSave: (dish: Omit<Dish, '
         selectedSubRecipeIds.forEach(srId => {
             const subRecipe = allSubRecipes.find(sr => sr.id === srId);
             if (subRecipe) {
-                subRecipe.ingredients.forEach(ing => {
+                (subRecipe.ingredients || []).forEach(ing => {
                     const invItem = inventoryItems.find(i => i.id === ing.inventoryId);
                     if (invItem) {
                         const rawQuantity = ing.quantity / (1 - ing.wastage / 100);
@@ -271,22 +279,62 @@ export default function MenuPage() {
         setDishModalOpen(true);
     }
 
-    const handleSaveDish = (dishData: Omit<Dish, 'id'>) => {
-        if (editingDish) {
-            setDishes(dishes.map(d => d.id === editingDish.id ? { ...d, ...dishData } : d));
-        } else {
-            const newDish: Dish = { id: `d${Date.now()}`, ...dishData };
-            setDishes([...dishes, newDish]);
+    const handleSaveDish = async (dishData: Omit<Dish, 'id'>) => {
+        try {
+            if (editingDish) {
+                await apiPlatillos.actualizar(editingDish.id, {
+                    nombre: dishData.name,
+                    categoria: dishData.category,
+                    precio: dishData.price,
+                    descripcion: dishData.description,
+                    subRecipeIds: dishData.subRecipeIds,
+                    isPublic: dishData.isPublic,
+                });
+                setDishes(dishes.map(d => d.id === editingDish.id ? { ...d, ...dishData } : d));
+            } else {
+                const response = await apiPlatillos.crear({
+                    nombre: dishData.name,
+                    categoria: dishData.category,
+                    precio: dishData.price,
+                    descripcion: dishData.description,
+                    subRecipeIds: dishData.subRecipeIds,
+                    isPublic: dishData.isPublic,
+                });
+                const newDish: Dish = { id: response.platillo?.id || `d${Date.now()}`, ...dishData };
+                setDishes([...dishes, newDish]);
+            }
+        } catch (error) {
+            console.error('Error al guardar platillo:', error);
+            // Fallback local
+            if (editingDish) {
+                setDishes(dishes.map(d => d.id === editingDish.id ? { ...d, ...dishData } : d));
+            } else {
+                const newDish: Dish = { id: `d${Date.now()}`, ...dishData };
+                setDishes([...dishes, newDish]);
+            }
         }
         setDishModalOpen(false);
         setEditingDish(null);
     }
 
-    const handleDeleteDish = (dishId: string) => {
+    const handleDeleteDish = async (dishId: string) => {
+        try {
+            await apiPlatillos.eliminar(dishId);
+        } catch (error) {
+            console.error('Error al eliminar platillo:', error);
+        }
         setDishes(dishes.filter(d => d.id !== dishId));
     }
 
-    const handleTogglePublic = (dishId: string) => {
+    const handleTogglePublic = async (dishId: string) => {
+        const dish = dishes.find(d => d.id === dishId);
+        if (dish) {
+            try {
+                await apiPlatillos.cambiarVisibilidad(dishId, !dish.isPublic);
+            } catch (error) {
+                console.error('Error al cambiar visibilidad:', error);
+            }
+        }
         setDishes(dishes.map(d => d.id === dishId ? { ...d, isPublic: !d.isPublic } : d));
     }
 
@@ -300,18 +348,78 @@ export default function MenuPage() {
         setSubRecipeModalOpen(true);
     }
 
-    const handleSaveSubRecipe = (data: Omit<SubRecipe, 'id' | 'status' | 'assignedCook'>) => {
-        if(editingSubRecipe) {
-            setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, ...data} : sr));
-        } else {
-            const newSubRecipe: SubRecipe = { id: `sr${Date.now()}`, ...data, status: 'Pendiente', assignedCook: undefined };
-            setSubRecipes([...subRecipes, newSubRecipe]);
+    const handleSaveSubRecipe = async (data: SubRecipeFormData) => {
+        try {
+            if(editingSubRecipe) {
+                await apiSubRecetas.actualizar(editingSubRecipe.id, {
+                    nombre: data.name || '',
+                    descripcion: data.description || '',
+                    tiempoPreparacion: data.prepTime || 0,
+                    ingredientes: data.ingredients || [],
+                });
+                setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, ...data} : sr));
+            } else {
+                const response = await apiSubRecetas.crear({
+                    nombre: data.name || '',
+                    descripcion: data.description || '',
+                    tiempoPreparacion: data.prepTime || 0,
+                    ingredientes: data.ingredients || [],
+                });
+                const newSubRecipe: SubRecipe = { 
+                    id: response.subreceta?.id || `sr${Date.now()}`, 
+                    ...data, 
+                    status: 'Pendiente', 
+                    assignedCook: undefined,
+                    // Spanish aliases
+                    nombre: data.name,
+                    descripcion: data.description,
+                    estado: 'Pendiente',
+                    tiempoPreparacion: data.prepTime,
+                    ingredientes: data.ingredients.map(ing => ({
+                        ...ing,
+                        inventarioId: ing.inventoryId,
+                        cantidad: ing.quantity,
+                        merma: ing.wastage,
+                    })),
+                };
+                setSubRecipes([...subRecipes, newSubRecipe]);
+            }
+        } catch (error) {
+            console.error('Error al guardar subreceta:', error);
+            // Fallback local
+            if(editingSubRecipe) {
+                setSubRecipes(subRecipes.map(sr => sr.id === editingSubRecipe.id ? {...sr, ...data} : sr));
+            } else {
+                const newSubRecipe: SubRecipe = { 
+                    id: `sr${Date.now()}`, 
+                    ...data, 
+                    status: 'Pendiente', 
+                    assignedCook: undefined,
+                    // Spanish aliases
+                    nombre: data.name,
+                    descripcion: data.description,
+                    estado: 'Pendiente',
+                    tiempoPreparacion: data.prepTime,
+                    ingredientes: data.ingredients.map(ing => ({
+                        ...ing,
+                        inventarioId: ing.inventoryId,
+                        cantidad: ing.quantity,
+                        merma: ing.wastage,
+                    })),
+                };
+                setSubRecipes([...subRecipes, newSubRecipe]);
+            }
         }
         setSubRecipeModalOpen(false);
         setEditingSubRecipe(null);
     }
     
-    const handleDeleteSubRecipe = (subRecipeId: string) => {
+    const handleDeleteSubRecipe = async (subRecipeId: string) => {
+        try {
+            await apiSubRecetas.eliminar(subRecipeId);
+        } catch (error) {
+            console.error('Error al eliminar subreceta:', error);
+        }
         setSubRecipes(subRecipes.filter(sr => sr.id !== subRecipeId));
         // Also remove from any dishes
         setDishes(dishes.map(d => ({
@@ -449,7 +557,7 @@ export default function MenuPage() {
                             <TableCell>
                                 <div className="flex items-center gap-1 text-muted-foreground">
                                     <Package className="h-4 w-4" />
-                                    {sr.ingredients.length}
+                                    {(sr.ingredients || []).length}
                                 </div>
                             </TableCell>
                             <TableCell>
